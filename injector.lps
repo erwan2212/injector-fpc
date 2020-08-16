@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="10"/>
+    <BuildModes Count="1" Active="Release">
+      <Item1 Name="Release">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="injector-$(TargetOS)"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <TargetCPU Value="x86_64"/>
+            <TargetOS Value="win64"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+        </CompilerOptions>
+      </Item1>
+    </BuildModes>
+    <Units Count="6">
+      <Unit0>
+        <Filename Value="injector.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UsageCount Value="22"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="umain.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="406"/>
+        <CursorPos X="47" Y="423"/>
+        <UsageCount Value="22"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="injection.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="31"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="ntdll.pas"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="C:\FPC\3.0.0\source\rtl\win64\windows.pp"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="59" Y="3"/>
+        <UsageCount Value="10"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="284"/>
+        <CursorPos X="14" Y="304"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit5>
+    </Units>
+    <JumpHistory Count="12" HistoryIndex="11">
+      <Position1>
+        <Filename Value="umain.pas"/>
+        <Caret Line="14" Column="38"/>
+      </Position1>
+      <Position2>
+        <Filename Value="umain.pas"/>
+        <Caret Line="390" Column="26" TopLine="375"/>
+      </Position2>
+      <Position3>
+        <Filename Value="umain.pas"/>
+        <Caret Line="332" Column="14" TopLine="317"/>
+      </Position3>
+      <Position4>
+        <Filename Value="umain.pas"/>
+        <Caret Line="345" Column="27" TopLine="336"/>
+      </Position4>
+      <Position5>
+        <Filename Value="umain.pas"/>
+        <Caret Line="372" Column="24" TopLine="368"/>
+      </Position5>
+      <Position6>
+        <Filename Value="umain.pas"/>
+        <Caret Line="265" Column="3" TopLine="263"/>
+      </Position6>
+      <Position7>
+        <Filename Value="umain.pas"/>
+        <Caret Line="419" Column="12"/>
+      </Position7>
+      <Position8>
+        <Filename Value="umain.pas"/>
+        <Caret Line="419" Column="12"/>
+      </Position8>
+      <Position9>
+        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
+      </Position9>
+      <Position10>
+        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
+        <Caret Line="35" Column="28" TopLine="15"/>
+      </Position10>
+      <Position11>
+        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
+        <Caret Line="302" Column="78" TopLine="282"/>
+      </Position11>
+      <Position12>
+        <Filename Value="umain.pas"/>
+        <Caret Line="12" Column="17"/>
+      </Position12>
+    </JumpHistory>
+  </ProjectSession>
+</CONFIG>

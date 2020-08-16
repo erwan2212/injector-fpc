@@ -1,0 +1,14 @@
+*.dll
+*.exe
+*.dcu
+*.res
+*.~*
+*.drive*
+*.bak
+*backup*
+*.o
+*.ppu
+*.compiled
+*.or
+*.a
+*.obj

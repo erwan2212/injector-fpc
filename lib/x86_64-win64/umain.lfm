@@ -1,0 +1,140 @@
+object Form1: TForm1
+  Left = 484
+  Height = 526
+  Top = 213
+  Width = 602
+  Caption = 'Injector'
+  ClientHeight = 526
+  ClientWidth = 602
+  DesignTimePPI = 120
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  LCLVersion = '1.8.2.0'
+  object Label1: TLabel
+    Left = 30
+    Height = 20
+    Top = 10
+    Width = 93
+    Caption = 'Process Name'
+    ParentColor = False
+  end
+  object Label3: TLabel
+    Left = 421
+    Height = 20
+    Top = 11
+    Width = 23
+    Caption = 'PID'
+    ParentColor = False
+  end
+  object btninject: TButton
+    Left = 33
+    Height = 31
+    Top = 96
+    Width = 90
+    Caption = 'Inject DLL'
+    OnClick = btninjectClick
+    TabOrder = 0
+  end
+  object txtpid: TEdit
+    Left = 418
+    Height = 28
+    Top = 31
+    Width = 160
+    TabOrder = 1
+  end
+  object RadioButton1: TRadioButton
+    Left = 30
+    Height = 24
+    Top = 69
+    Width = 165
+    Caption = 'CreateRemoteThread'
+    Checked = True
+    TabOrder = 2
+    TabStop = True
+  end
+  object RadioButton2: TRadioButton
+    Left = 200
+    Height = 24
+    Top = 69
+    Width = 160
+    Caption = 'RtlCreateUserThread'
+    TabOrder = 3
+  end
+  object RadioButton3: TRadioButton
+    Left = 376
+    Height = 24
+    Top = 69
+    Width = 144
+    Caption = 'NtCreateThreadEx'
+    TabOrder = 4
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Height = 28
+    Top = 498
+    Width = 602
+    Panels = <>
+  end
+  object txtdll: TEdit
+    Left = 32
+    Height = 28
+    Top = 136
+    Width = 546
+    TabOrder = 6
+    Text = 'c:\_apps\hook.dll'
+  end
+  object txtdata: TEdit
+    Left = 32
+    Height = 28
+    Top = 176
+    Width = 544
+    TabOrder = 7
+    Text = 'data'
+  end
+  object btnenum: TButton
+    Left = 32
+    Height = 31
+    Top = 208
+    Width = 94
+    Caption = 'Enum'
+    OnClick = btnenumClick
+    TabOrder = 8
+  end
+  object ListBox1: TListBox
+    Left = 8
+    Height = 241
+    Top = 248
+    Width = 591
+    ItemHeight = 0
+    TabOrder = 9
+  end
+  object btneject: TButton
+    Left = 480
+    Height = 31
+    Top = 96
+    Width = 94
+    Caption = 'Eject DLL'
+    OnClick = btnejectClick
+    TabOrder = 10
+  end
+  object txtprocess: TComboBox
+    Left = 33
+    Height = 28
+    Top = 30
+    Width = 239
+    ItemHeight = 20
+    OnExit = txtprocessExit
+    OnSelect = txtprocessSelect
+    TabOrder = 11
+    Text = 'txtprocess'
+  end
+  object btnrefresh: TButton
+    Left = 280
+    Height = 31
+    Top = 27
+    Width = 30
+    Caption = '...'
+    OnClick = btnrefreshClick
+    TabOrder = 12
+  end
+end
