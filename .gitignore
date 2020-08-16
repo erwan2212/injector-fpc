@@ -6,6 +6,7 @@
 *.drive*
 *.bak
 *backup*
+*lib*
 *.o
 *.ppu
 *.compiled
