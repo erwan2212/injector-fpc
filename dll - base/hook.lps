@@ -9,7 +9,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="$(TargetCPU)-$(TargetOS)\hook"/>
+            <Filename Value="hook-$(TargetOS)"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -18,8 +18,8 @@
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <RelocatableUnit Value="True"/>
-            <TargetCPU Value="x86_64"/>
-            <TargetOS Value="win64"/>
+            <TargetCPU Value="i386"/>
+            <TargetOS Value="win32"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -41,7 +41,7 @@
         <Filename Value="hook.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <CursorPos X="46" Y="17"/>
+        <CursorPos X="51" Y="16"/>
         <UsageCount Value="23"/>
         <Loaded Value="True"/>
       </Unit0>
