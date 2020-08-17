@@ -18,8 +18,8 @@
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <RelocatableUnit Value="True"/>
-            <TargetCPU Value="i386"/>
-            <TargetOS Value="win32"/>
+            <TargetCPU Value="x86_64"/>
+            <TargetOS Value="win64"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -41,8 +41,8 @@
         <Filename Value="hook.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <CursorPos X="51" Y="16"/>
-        <UsageCount Value="23"/>
+        <CursorPos X="47" Y="17"/>
+        <UsageCount Value="65"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -51,7 +51,7 @@
         <EditorIndex Value="1"/>
         <TopLine Value="63"/>
         <CursorPos X="25" Y="99"/>
-        <UsageCount Value="11"/>
+        <UsageCount Value="32"/>
         <Loaded Value="True"/>
       </Unit1>
     </Units>

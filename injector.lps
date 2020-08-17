@@ -15,6 +15,11 @@
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+            </SyntaxOptions>
+          </Parsing>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <TargetCPU Value="x86_64"/>
@@ -42,6 +47,7 @@
         <Filename Value="injector.lpr"/>
         <IsPartOfProject Value="True"/>
         <UsageCount Value="22"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
       <Unit1>
         <Filename Value="umain.pas"/>
@@ -50,24 +56,29 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="406"/>
-        <CursorPos X="47" Y="423"/>
+        <TopLine Value="376"/>
+        <CursorPos Y="372"/>
         <UsageCount Value="22"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
         <Filename Value="injection.pas"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="31"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="317"/>
+        <CursorPos X="47" Y="325"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
         <Filename Value="ntdll.pas"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="43"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
         <Filename Value="C:\FPC\3.0.0\source\rtl\win64\windows.pp"/>
@@ -77,14 +88,13 @@
       </Unit4>
       <Unit5>
         <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="284"/>
         <CursorPos X="14" Y="304"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit5>
     </Units>
-    <JumpHistory Count="12" HistoryIndex="11">
+    <JumpHistory Count="15" HistoryIndex="14">
       <Position1>
         <Filename Value="umain.pas"/>
         <Caret Line="14" Column="38"/>
@@ -118,20 +128,33 @@
         <Caret Line="419" Column="12"/>
       </Position8>
       <Position9>
-        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
+        <Filename Value="umain.pas"/>
+        <Caret Line="12" Column="17"/>
       </Position9>
       <Position10>
-        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
-        <Caret Line="35" Column="28" TopLine="15"/>
+        <Filename Value="umain.pas"/>
+        <Caret Line="319" Column="29" TopLine="308"/>
       </Position10>
       <Position11>
-        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
-        <Caret Line="302" Column="78" TopLine="282"/>
+        <Filename Value="injection.pas"/>
+        <Caret Line="15" Column="10"/>
       </Position11>
       <Position12>
         <Filename Value="umain.pas"/>
-        <Caret Line="12" Column="17"/>
+        <Caret Line="321" Column="21" TopLine="308"/>
       </Position12>
+      <Position13>
+        <Filename Value="injection.pas"/>
+        <Caret Line="12" Column="10" TopLine="4"/>
+      </Position13>
+      <Position14>
+        <Filename Value="umain.pas"/>
+        <Caret Line="383" Column="18" TopLine="374"/>
+      </Position14>
+      <Position15>
+        <Filename Value="umain.pas"/>
+        <Caret Line="334" Column="19" TopLine="317"/>
+      </Position15>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

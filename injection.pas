@@ -295,7 +295,7 @@ type TGetThreadInformation=function(hThread:thandle;
   ThreadInformation:pointer;
   ThreadInformationSize:DWORD):boolean;stdcall;
 var
-  baseaddress: Pointer;
+  baseaddress: Pointer=nil;
   Size, BytesWritten, TID: ulong;
   dw:dword;
   Status:integer;
@@ -310,12 +310,13 @@ begin
   OutputDebugString(pchar('*** EjectRTL_DLL ***'));
   OutputDebugString(pchar('ProcessHandle:'+inttostr(ProcessHandle)));
   size:=sizeof(hmod);
-  //size:=align(size,$1000);
+{
+//size:=align(size,$1000);
   //status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT , PAGE_READWRITE);
+  //if status<>0 then
   baseaddress:=nil;
   baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
   OutputDebugStringA(pchar('VirtualAllocEx:'+inttohex(nativeuint(baseaddress),8)));
-  //if status<>0 then
   if baseaddress=nil then
     begin
     OutputDebugString(pchar('EjectRTL_DLL, NtAllocateVirtualMemory failed,'+inttohex(status,sizeof(status))));
@@ -327,6 +328,7 @@ begin
   OutputDebugString(pchar('hmod:'+inttohex(hmod,size)));
   //b:=WriteProcessMemory(ProcessHandle, NewModule, Module, Size, BytesWritten);
   //if b=false
+  //because we use hmod as a param of our remote thread, we dont need virtualallocex/baseaddress nor writememory
   Status:=NtWriteVirtualMemory(ProcessHandle, baseaddress, @hmod, sizeof(hmod), @BytesWritten);
   if Status<>0
     then
@@ -337,6 +339,7 @@ begin
     end
     else
     begin
+    }
     //Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, GetProcAddress (GetModuleHandle('dll'),'func') , pchar('param'), @hThread, @ClientID);
     hThread:=thandle(-1);
     OutputDebugString(pchar('FreeLibrary:'+inttohex(nativeuint(GetProcAddress(GetModuleHandle('kernel32.dll'), 'FreeLibrary')),8)));
@@ -352,10 +355,11 @@ begin
     GetExitCodeThread(hThread ,exitcode);
     OutputDebugString(pchar('GetExitCodeThread:'+inttohex(exitcode,sizeof(exitcode))));
     CloseHandle(hThread);
-    VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+    if baseaddress<>nil then VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
     if Status <>0 then result:=false else result:=true;
+    {
     end;
-
+    }
 end;
 
 
@@ -402,7 +406,9 @@ begin
     else
     begin
     //
-    pointer(TNtCreateThreadEx):=GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
+    //objpfc
+    //pointer(TNtCreateThreadEx):=GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
+     TNtCreateThreadEx:=GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
 
   if (@TNtCreateThreadEx <> nil) then
   begin
@@ -526,7 +532,9 @@ ntbuf: NT_THREAD_BUFFER;
 begin
 Result := 0;
 
-pointer(__NtCreateThreadEx) := GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
+//objfpc
+//pointer(__NtCreateThreadEx) := GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
+__NtCreateThreadEx := GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
 if (@__NtCreateThreadEx <> nil) then
 begin
 ntbuf.Size := SizeOf(NT_THREAD_BUFFER);
