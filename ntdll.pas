@@ -53,7 +53,9 @@ end ;
     dwSize, dwFreeType: DWORD): cardinal;
     stdcall;external 'kernel32.dll';
    }
-   
+
+   //->dynamic
+   {
       function  RtlCreateUserThread(
       hProcess : THANDLE;
       SecurityDescriptor : PSECURITY_DESCRIPTOR;
@@ -66,6 +68,7 @@ end ;
       phThread : PHANDLE;
       ClientId : PCLIENT_ID
     ): NTSTATUS; stdcall; external 'ntdll.dll';
+    }
 
           {
     function NtCreateThreadEx (
@@ -80,6 +83,8 @@ end ;
     Cardinal; stdcall; external 'ntdll.dll';
     }
 
+    //->dynamic
+    {
     function NtCreateThreadEx(
   ThreadHandle: PHANDLE;
   DesiredAccess: ACCESS_MASK;
@@ -92,7 +97,9 @@ end ;
   SizeOfStackCommit: Pointer;
   SizeOfStackReserve: Pointer;
   Thebuf: Pointer): HRESULT; stdcall; external 'ntdll.dll';
-
+  }
+    //->dynamic
+    {
     function  NtWriteVirtualMemory(
       ProcessHandle : HANDLE;
       BaseAddress : PVOID;
@@ -100,7 +107,9 @@ end ;
       BufferLength : ULONG;
       ReturnLength : PULONG
     ): NTSTATUS; stdcall; external 'ntdll.dll';
+    }
 
+     {//->dynamic
      function  NtAllocateVirtualMemory(
       ProcessHandle : HANDLE;
       BaseAddress : PPVOID;
@@ -109,23 +118,30 @@ end ;
       AllocationType : ULONG;
       Protect : ULONG
     ): NTSTATUS; stdcall; external 'ntdll.dll';
+     }
 
+      {//->dynamic
     function NtFreeVirtualMemory(
     hProcess: Cardinal;
     lpStartAddress: ppvoid;
     AllocationSize : PULONG;
     AllocationType : ULONG):
     Cardinal; stdcall; external 'ntdll.dll';
+    }
 
+    {//->dynamic
     function  NtOpenProcess(
       ProcessHandle : PHANDLE;
       DesiredAccess : ACCESS_MASK;
       ObjectAttributes : POBJECT_ATTRIBUTES;
       ClientId : PCLIENT_ID
     ): NTSTATUS; stdcall; external 'ntdll.dll';
+    }
 
+    {
     function OpenThread(dwDesiredAccess: DWORD; bInheritHandle: BOOL; dwThreadId: DWORD): DWORD;
     stdcall; external 'kernel32.dll';
+    }
 
 const
  THREAD_GET_CONTEXT = $0008;
@@ -134,6 +150,64 @@ const
 
 procedure InitializeObjectAttributes(var p: TObjectAttributes; n:PUNICODE_STRING;
                                           a: ULONG; r: THandle; s: PVOID);    
+
+var
+      NtWriteVirtualMemory:function(
+      ProcessHandle : HANDLE;
+      BaseAddress : PVOID;
+      Buffer : PVOID;
+      BufferLength : ULONG;
+      ReturnLength : PULONG
+    ): NTSTATUS; stdcall;
+
+      RtlCreateUserThread:function(
+      hProcess : THANDLE;
+      SecurityDescriptor : PSECURITY_DESCRIPTOR;
+      CreateSuspended : BOOLEAN;
+      StackZeroBits : ULONG;
+      StackReserve : SIZE_T;
+      StackCommit : SIZE_T;
+      lpStartAddress : pointer;
+      lpParameter : pointer;
+      phThread : PHANDLE;
+      ClientId : PCLIENT_ID
+    ): NTSTATUS; stdcall;
+
+      NtOpenProcess:function(
+      ProcessHandle : PHANDLE;
+      DesiredAccess : ACCESS_MASK;
+      ObjectAttributes : POBJECT_ATTRIBUTES;
+      ClientId : PCLIENT_ID
+    ): NTSTATUS; stdcall;
+
+      NtAllocateVirtualMemory:function(
+      ProcessHandle : HANDLE;
+      BaseAddress : PPVOID;
+      ZeroBits : ULONG;
+      AllocationSize : PULONG;
+      AllocationType : ULONG;
+      Protect : ULONG
+    ): NTSTATUS; stdcall;
+
+     NtFreeVirtualMemory:function(
+    hProcess: Cardinal;
+    lpStartAddress: ppvoid;
+    AllocationSize : PULONG;
+    AllocationType : ULONG):
+    Cardinal; stdcall;
+
+    NtCreateThreadEx:function(
+  ThreadHandle: PHANDLE;
+  DesiredAccess: ACCESS_MASK;
+  ObjectAttributes: Pointer;
+  ProcessHandle: THANDLE;
+  lpStartAddress: Pointer;
+  lpParameter: Pointer;
+  CreateSuspended: BOOL;
+  dwStackSize: DWORD;
+  SizeOfStackCommit: Pointer;
+  SizeOfStackReserve: Pointer;
+  Thebuf: Pointer): HRESULT; stdcall;
 
 implementation
 
@@ -147,5 +221,37 @@ begin
   p.SecurityDescriptor := s;
   p.SecurityQualityOfService := nil;
 end;
+
+function initAPI:boolean;
+  var lib:hmodule=0;
+  begin
+  //writeln('initapi');
+  result:=false;
+  try
+  //lib:=0;
+  if lib>0 then begin {log('lib<>0');} result:=true; exit;end;
+      {$IFDEF win64}lib:=loadlibrary('ntdll.dll');{$endif}
+      {$IFDEF win32}lib:=loadlibrary('ntdll.dll');{$endif}
+  if lib<=0 then
+    begin
+    writeln('could not loadlibrary ntdll.dll');
+    exit;
+    end;
+  NtWriteVirtualMemory:=getProcAddress(lib,'NtWriteVirtualMemory');
+  RtlCreateUserThread:=getProcAddress(lib,'RtlCreateUserThread');
+  NtOpenProcess:=getProcAddress(lib,'NtOpenProcess');
+  NtAllocateVirtualMemory:=getProcAddress(lib,'NtAllocateVirtualMemory');
+  NtFreeVirtualMemory:=getProcAddress(lib,'NtFreeVirtualMemory');
+  NtCreateThreadEx:=getProcAddress(lib,'NtCreateThreadEx');
+  result:=true;
+  except
+  //on e:exception do writeln('init error:'+e.message);
+     writeln('init error');
+  end;
+  //log('init:'+BoolToStr (result,'true','false'));
+  end;
+
+initialization
+initAPI ;
 
 end.

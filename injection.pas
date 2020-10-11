@@ -15,7 +15,9 @@ function EjectRTL_DLL(ProcessHandle: longword; hmod:thandle):boolean;
 function InjectNT_DLL(ProcessHandle: longword; dll: string):boolean;
 
 
-var
+//var
+
+{
 TNtCreateThreadEx : function(
   ThreadHandle: PHANDLE;
   DesiredAccess: ACCESS_MASK;
@@ -28,9 +30,10 @@ TNtCreateThreadEx : function(
   SizeOfStackCommit: Pointer;
   SizeOfStackReserve: Pointer;
   Thebuf: Pointer): HRESULT; stdcall;
+  }
 
 
-
+  {//incorrect?
 __NtCreateThreadEx: function (
   var hThread: Cardinal;
   DesiredAccess: Cardinal;
@@ -43,7 +46,7 @@ __NtCreateThreadEx: function (
   SizeOfStackCommit,
   SizeOfStackReserve: Cardinal;
   var Thebuf: NT_THREAD_BUFFER): Cardinal; stdcall = nil;
-
+  }
   
 implementation
 
@@ -59,7 +62,7 @@ end;
 
 function Inject_RemoteThreadDLL(ProcessHandle: longword; dll:string):boolean;
 var
-baseaddress: Pointer;
+baseaddress: Pointer=nil;
   Size, BytesWritten, TID: longword;
   NtStatus:integer;
   //ClientID:CLIENT_ID ;
@@ -73,13 +76,12 @@ result:=false;
   OutputDebugString(pchar('ProcessHandle:'+inttostr(ProcessHandle)));
   SetLastError(0);
   size:=length(dll)+sizeof(char);
-  //size:=align(size,$1000);
-  //status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT , PAGE_READWRITE);
-  baseaddress:=nil;
-  baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
+  size:=align(size,$1000); //needed for NtAllocateVirtualMemory
+  status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT , PAGE_READWRITE);
+  //baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
   OutputDebugStringA(pchar('VirtualAllocEx:'+inttohex(nativeuint(baseaddress),8)));
-  //if status<>0 then
-  if baseaddress=nil then
+  if status<>0 then
+  //if baseaddress=nil then
     begin
     OutputDebugString(pchar('InjectRTL_DLL, NtAllocateVirtualMemory failed,'+inttohex(status,4)));
     raise Exception.Create('InjectRTL_DLL, NtAllocateVirtualMemory failed,'+inttohex(status,4));
@@ -107,7 +109,8 @@ result:=false;
   GetExitCodeThread(hThread ,exitcode);
   OutputDebugString(pchar('GetExitCodeThread:'+inttohex(exitcode,sizeof(exitcode))));
   CloseHandle(hthread);
-  VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+  //VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+  NtFreeVirtualMemory (ProcessHandle,@baseaddress ,@size,MEM_RELEASE);
 end;
 
 
@@ -225,7 +228,7 @@ type TGetThreadInformation=function(hThread:thandle;
   ThreadInformation:pointer;
   ThreadInformationSize:DWORD):boolean;stdcall;
 var
-  baseaddress: Pointer;
+  baseaddress: Pointer=nil;
   Size, BytesWritten, TID: ulong;
   dw:dword;
   Status:integer;
@@ -240,13 +243,12 @@ begin
   OutputDebugString(pchar('*** InjectRTL_DLL ***:'+inttostr(ProcessHandle)));
   OutputDebugString(pchar('ProcessHandle:'+inttostr(ProcessHandle)));
   size:=length(dll)+sizeof(char);
-  //size:=align(size,$1000);
-  //status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT , PAGE_READWRITE);
-  baseaddress:=nil;
-  baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
+  size:=align(size,$1000); //needed for NtAllocateVirtualMemory
+  status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE , PAGE_READWRITE);
+  //baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
   OutputDebugStringA(pchar('VirtualAllocEx:'+inttohex(nativeuint(baseaddress),8)));
-  //if status<>0 then
-  if baseaddress=nil then
+  if status<>0 then
+  //if baseaddress=nil then
     begin
     OutputDebugString(pchar('InjectRTL_DLL, NtAllocateVirtualMemory failed,'+inttohex(status,4)));
     raise Exception.Create('InjectRTL_DLL, NtAllocateVirtualMemory failed,'+inttohex(status,4));
@@ -281,7 +283,8 @@ begin
     GetExitCodeThread(hThread ,exitcode);
     OutputDebugString(pchar('GetExitCodeThread:'+inttohex(exitcode,sizeof(exitcode))));
     CloseHandle(hThread);
-    VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+    //VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+    NtFreeVirtualMemory (ProcessHandle,@baseaddress ,@size,MEM_RELEASE);
     if Status <>0 then result:=false else result:=true;
     end;
 
@@ -355,7 +358,9 @@ begin
     GetExitCodeThread(hThread ,exitcode);
     OutputDebugString(pchar('GetExitCodeThread:'+inttohex(exitcode,sizeof(exitcode))));
     CloseHandle(hThread);
-    if baseaddress<>nil then VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+    if baseaddress<>nil then
+       //VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+       NtFreeVirtualMemory (ProcessHandle,@baseaddress ,@size,MEM_RELEASE);
     if Status <>0 then result:=false else result:=true;
     {
     end;
@@ -365,7 +370,7 @@ end;
 
 function InjectNT_DLL(ProcessHandle: longword; dll: string):boolean;
 var
-  baseaddress: Pointer;
+  baseaddress: Pointer=nil;
   Size, TID: longword;
   BytesWritten:ulong;
   dw:dword;
@@ -381,13 +386,12 @@ begin
  OutputDebugString(pchar('*** InjectNT_DLL ***:'+inttostr(ProcessHandle)));
  OutputDebugString(pchar('ProcessHandle:'+inttostr(ProcessHandle)));
  size:=length(dll)+sizeof(char);
-  //size:=align(size,$1000);
-  //status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-  baseaddress:=nil;
-  baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
-  OutputDebugStringA(pchar('VirtualAllocEx:'+inttohex(nativeuint(baseaddress),8)));
-  //if status<>0 then
-  if baseaddress=nil then
+  size:=align(size,$1000);
+  status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE, PAGE_READWRITE);
+  //baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
+  //OutputDebugStringA(pchar('VirtualAllocEx:'+inttohex(nativeuint(baseaddress),8)));
+  if status<>0 then
+  //if baseaddress=nil then
     begin
     result:=false;
     raise Exception.Create('NtAllocateVirtualMemory failed,'+inttohex(status,4));
@@ -408,9 +412,9 @@ begin
     //
     //objpfc
     //pointer(TNtCreateThreadEx):=GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
-     TNtCreateThreadEx:=GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx');
+     //NtCreateThreadEx:=GetProcAddress(LoadLibrary('ntdll.dll'), 'NtCreateThreadEx'); //part of untdll
 
-  if (@TNtCreateThreadEx <> nil) then
+  if (@NtCreateThreadEx <> nil) then
   begin
   ntbuf.Size := SizeOf(NT_THREAD_BUFFER);
   fillchar(Unknown3 ,sizeof(Unknown3 ),0);
@@ -426,7 +430,7 @@ begin
   hThread:=0;
   OutputDebugString(pchar('LoadLibraryA:'+inttohex(nativeuint(GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA')),sizeof(nativeuint))));
   //on x64, replace @ntbuf with nil ...
-  ret:=TNtCreateThreadEx(@hThread,$1FFFFF, nil, ProcessHandle, GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA'), baseaddress, False, 0, nil, nil, nil);
+  ret:=NtCreateThreadEx(@hThread,$1FFFFF, nil, ProcessHandle, GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA'), baseaddress, False, 0, nil, nil, nil);
   end;
   //
   OutputDebugStringA(pchar('NtCreateThreadEx:'+inttohex(ret,sizeof(ret))));
@@ -437,8 +441,9 @@ begin
     //inx32 world, exitcode is the base address of our dll
     OutputDebugString(pchar('GetExitCodeThread:'+inttohex(exitcode,sizeof(exitcode))));
     CloseHandle(hThread);
-    VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
-
+    if baseaddress<>nil then
+       //VirtualFreeEx(ProcessHandle, baseaddress, Size, MEM_RELEASE);
+       NtFreeVirtualMemory (ProcessHandle,@baseaddress ,@size,MEM_RELEASE);
     if hThread <>0 then result:=true else result:=false;
     end;
 
@@ -524,6 +529,7 @@ end;
 }
 
 //***************************************************************************************************************
+{
 function __CreateRemoteThread(hProcess: Cardinal; lpThreadAttributes: Pointer; dwStackSize: Cardinal;
 lpStartAddress, lpParameter: Pointer; dwCreationFlags: Cardinal; var lpThreadId: Cardinal): Cardinal;
 var
@@ -558,6 +564,7 @@ else
 Result := CreateRemoteThread(hProcess, lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags,
 lpThreadId);
 end;
+}
 
 function InjectString(hProcess: Cardinal; Text: String): PChar;
 var
@@ -577,6 +584,7 @@ if not (WriteProcessMemory(hProcess, Result, pBuffer, dwBufLen, @nBytes)) then
 Result := nil;
 end;
 
+{
 function InjectThread(hProcess: Cardinal; pThreadFunc: Pointer; pThreadParam: Pointer; dwFuncSize,
 dwParamSize: Cardinal; Results: Boolean): Cardinal;
 var
@@ -593,5 +601,6 @@ WaitForSingleObject(Result, INFINITE);
 ReadProcessMemory(hProcess, pParam, pThreadParam, dwParamSize, @nBytes);
 end; 
 end;
+}
 
 end.
