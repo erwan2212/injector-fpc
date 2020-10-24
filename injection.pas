@@ -374,7 +374,7 @@ var
   Size, TID: longword;
   BytesWritten:ulong;
   dw:dword;
-  Status:integer;
+  Status:integer=0;
   hThread:thandle;
   ClientID:CLIENT_ID ;
   //
