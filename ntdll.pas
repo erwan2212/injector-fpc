@@ -209,6 +209,17 @@ var
   SizeOfStackReserve: Pointer;
   Thebuf: Pointer): HRESULT; stdcall;
 
+  NtGetNextThread:function(
+        ProcessHandle:thandle;
+        ThreadHandle:thandle;
+        DesiredAccess:ACCESS_MASK;
+        HandleAttributes:ulong;
+        Flags:ulong;
+        var NewThreadHandle:thandle
+       ):NTSTATUS;stdcall;
+
+
+
 implementation
 
 procedure InitializeObjectAttributes(var p: TObjectAttributes; n:PUNICODE_STRING;
@@ -243,6 +254,7 @@ function initAPI:boolean;
   NtAllocateVirtualMemory:=getProcAddress(lib,'NtAllocateVirtualMemory');
   NtFreeVirtualMemory:=getProcAddress(lib,'NtFreeVirtualMemory');
   NtCreateThreadEx:=getProcAddress(lib,'NtCreateThreadEx');
+  NtGetNextThread:=getProcAddress(lib,'NtGetNextThread');
   result:=true;
   except
   //on e:exception do writeln('init error:'+e.message);

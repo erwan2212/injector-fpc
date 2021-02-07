@@ -14,6 +14,9 @@ function EjectRTL_DLL(ProcessHandle: longword; hmod:thandle):boolean;
 //function InjectNT_CODE(ProcessHandle: longword; EntryPoint: pointer):boolean;
 function InjectNT_DLL(ProcessHandle: longword; dll: string):boolean;
 
+//function injectapc( hprocess,hthread:thandle;dll:string):boolean;
+function injectctx(hprocess, hthread: thandle; dll: string): boolean;
+
 
 //var
 
@@ -47,6 +50,14 @@ __NtCreateThreadEx: function (
   SizeOfStackReserve: Cardinal;
   var Thebuf: NT_THREAD_BUFFER): Cardinal; stdcall = nil;
   }
+
+   {
+   function QueueUserAPC(
+   pfnAPC:pointer; //PAPCFUNC
+   hThread:THANDLE;
+   dwData:nativeuint //ULONG_PTR
+  ):dword; stdcall;external 'kernel32.dll';
+  }
   
 implementation
 
@@ -59,6 +70,200 @@ begin
   else
     Result := ((Value + Align - 1) div Align) * Align;
 end;
+
+function AllocMemAlign(const ASize, AAlign: Cardinal; out AHolder: Pointer): Pointer;
+var
+  Size: Cardinal;
+  Shift: NativeUInt;
+begin
+  if AAlign <= 1 then
+  begin
+    AHolder := AllocMem(ASize);
+    Result := AHolder;
+    Exit;
+  end;
+
+  if ASize = 0 then
+  begin
+    AHolder := nil;
+    Result := nil;
+    Exit;
+  end;
+
+  Size := ASize + AAlign - 1;
+
+  AHolder := AllocMem(Size);
+
+  Shift := NativeUInt(AHolder) mod AAlign;
+  if Shift = 0 then
+    Result := AHolder
+  else
+    Result := Pointer(NativeUInt(AHolder) + (AAlign - Shift));
+end;
+
+
+{
+function injectapc( hprocess,hthread:thandle;dll:string):boolean;
+var
+    lpDllAddr,lploadLibraryAddr:pointer;
+    byteswritten:nativeuint;
+begin
+    //memory address for dll
+    lpDllAddr := VirtualAllocEx(hProcess, nil, length(dll), MEM_COMMIT or MEM_RESERVE, PAGE_READWRITE);
+    WriteProcessMemory(hProcess, lpDllAddr, @dll[1], length(dll), byteswritten); // write dll path
+    if byteswritten =0 then exit;
+    OutputDebugString(pchar('lpDllAddr:'+inttohex(nativeuint(lpDllAddr),8)+' '+inttostr(byteswritten )+' written'));
+    //memory address of loadlibrary
+    lploadLibraryAddr := GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA');
+    OutputDebugString(pchar('loadLibraryAddress:'+inttohex(nativeuint(lploadLibraryAddr),8)));
+    //
+    if QueueUserAPC(GetProcAddress(LoadLibraryA('kernel32.dll'), 'LoadLibraryA'), hThread, nativeuint(lpDllAddr))=0
+       then result:=false
+       else result:=true;
+end;
+}
+
+function injectctx(hprocess, hthread: thandle; dll: string): boolean;
+const
+{$IFDEF win64}
+  code:array [0..62] of byte =
+    // sub rsp, 28h
+    ($48, $83, $ec, $28,
+    // mov [rsp + 18], rax
+    $48, $89, $44, $24, $18,
+    // mov [rsp + 10h], rcx
+    $48, $89, $4c, $24, $10,
+    // mov rcx, 11111111111111111h  -> DLL
+    $48, $b9, $11, $11, $11, $11, $11, $11, $11, $11,
+    // mov rax, 22222222222222222h  -> Loadlibrary
+    $48, $b8, $22, $22, $22, $22, $22, $22, $22, $22,
+    // call rax
+    $ff, $d0,
+    // mov rcx, [rsp + 10h]
+    $48, $8b, $4c, $24, $10,
+    // mov rax, [rsp + 18h]
+    $48, $8b, $44, $24, $18,
+    // add rsp, 28h
+    $48, $83, $c4, $28,
+    // mov r11, 333333333333333333h  -> RIP
+    $49, $bb, $33, $33, $33, $33, $33, $33, $33, $33,
+    // jmp r11
+    $41, $ff, $e3);
+  {$endif}
+  {$IFDEF win32}
+      code:array [0..21] of byte =
+      ($68, $DE, $AD, $BE, $EF, // push $DEADBEEF EIP
+      $9c,             //pushfd
+      $60,             //pushad
+      $68, $DE, $AD, $BE, $EF, //push $DEADBEEF // memory with dll name
+      $b8, $DE, $AD, $BE, $EF, //mov eax, $DEADBEEF // loadlibrary address
+      $ff, $d0,          //call eax
+      $61,             //popad
+      $9d,             //popfd
+      $c3);             //ret
+  {$endif}
+var
+  lpDllAddr, stub, lploadLibraryAddr: pointer;
+   dwdlladdr, dwloadlibraryaddr: nativeuint;
+  oldip,byteswritten: nativeuint;
+  ctx: PContext;
+  Storage: Pointer;
+  i:byte;
+  tmp:string;
+begin
+  result:=false;
+  OutputDebugString (pchar('hprocess:'+inttostr(hprocess)));
+  OutputDebugString (pchar('hthread:'+inttostr(hthread)));
+  //if ntsuspendprocess(hprocess)=false then
+  if SuspendThread(hthread)=-1 then
+     begin
+     outputdebugstring(pchar('suspend failed: '+inttostr(getlasterror)));
+     exit;
+     end;
+
+  //memory address for dll
+  lpDllAddr := VirtualAllocEx(hProcess, nil, length(dll), MEM_COMMIT, PAGE_READWRITE);
+  if lpDllAddr = nil then
+  begin
+       outputdebugstring(pchar('lpDllAddr is null:'+inttostr(getlasterror)));
+       exit;
+  end;
+  dwdlladdr := nativeuint(lpDllAddr);
+  OutputDebugString(PChar('lpDllAddr:' + inttohex(nativeuint(lpDllAddr), 8)));
+  WriteProcessMemory(hProcess, lpDllAddr, @dll[1], length(dll), byteswritten);
+  if (byteswritten <> length(dll)) or (byteswritten = 0) then
+  begin
+     outputdebugstring(pchar('WriteProcessMemory failed'));
+     exit;
+  end;
+
+  //memory address of code in the remote process
+  stub := VirtualAllocEx(hProcess, nil, length(code ), MEM_COMMIT,PAGE_EXECUTE_READWRITE);
+  if stub = nil then
+  begin
+       outputdebugstring(pchar('stub is null'));
+       exit;
+  end;
+  OutputDebugString(PChar('stub:' + inttohex(nativeuint(stub), 8)));
+
+  //memory address of loadlibrary
+  lploadLibraryAddr := GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA');
+  dwloadlibraryaddr := nativeuint(lploadLibraryAddr);
+  OutputDebugString(PChar('loadLibraryAddress:' + inttohex( nativeuint(lploadLibraryAddr), 8)));
+
+  //old context
+  {$IFDEF win64}ctx := AllocMemAlign(SizeOf(TContext), 16, Storage);{$endif}
+  {$IFDEF win32}ctx := AllocMemAlign(SizeOf(TContext), 0, Storage);{$endif}
+  ctx^.ContextFlags := CONTEXT_CONTROL;
+  if GetThreadContext(hThread, ctx^)=false then
+  begin
+       outputdebugstring(pchar('GetThreadContext failed:'+inttostr(getlasterror)));
+       exit;
+  end;
+  {$IFDEF win64}oldIP := ctx^.Rip;{$endif}
+  {$IFDEF win32}oldIP := ctx^.eip;{$endif}
+  OutputDebugString(PChar('oldip:' + inttohex(nativeuint(oldip), 8)));
+
+  //modify code with correct memory addresses
+  //RIP + dwdlladdr + dwloadlibraryaddr
+  {$IFDEF win64}
+  copymemory(@code [$34], @oldip, sizeof(nativeuint));
+  copymemory(@code [$10], @dwdlladdr, sizeof(nativeuint));
+  copymemory(@code [$1a], @dwloadlibraryaddr, sizeof(nativeuint));
+  {$endif}
+  {$IFDEF win32}
+  copymemory(@code [1], @oldip, sizeof(nativeuint));
+  copymemory(@code [8], @dwdlladdr, sizeof(nativeuint));
+  copymemory(@code [13], @dwloadlibraryaddr, sizeof(nativeuint));
+  {$endif}
+  //write code to remote process
+  WriteProcessMemory(hProcess, stub, @code[0], length(code ), byteswritten);
+  if (byteswritten<>length(code )) or (byteswritten = 0) then
+  begin
+     outputdebugstring(pchar('WriteProcessMemory failed'));
+     exit;
+  end;
+
+  //update context
+  {$IFDEF win64}ctx^.rip := nativeuint(stub);{$endif}
+  {$IFDEF win32}ctx^.eip := nativeuint(stub);{$endif}
+  if SetThreadContext(hThread, ctx^)=false then
+  begin
+   outputdebugstring(pchar('SetThreadContext failed:'+inttostr(getlasterror)));
+   exit;
+  end else outputdebugstring(pchar('SetThreadContext OK'));
+
+  //for i:=0 to length(codeX64_2 )-1 do tmp:=tmp+ (inttohex(codeX64_2[i],2)+' ');
+
+  if ResumeThread(hthread)=-1 then
+  //if ntresumeprocess(hprocess)=false then
+   begin
+     outputdebugstring(pchar('resume failed: '+inttostr(getlasterror)));
+     exit;
+   end else outputdebugstring(pchar('resume OK: '+inttostr(getlasterror)));
+
+  result:=true;
+  end;
 
 function Inject_RemoteThreadDLL(ProcessHandle: longword; dll:string):boolean;
 var

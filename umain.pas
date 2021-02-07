@@ -18,6 +18,7 @@ type
     btnenum: TButton;
     btneject: TButton;
     btnrefresh: TButton;
+    RadioButton4: TRadioButton;
     txtprocess: TComboBox;
     Label1: TLabel;
     Label3: TLabel;
@@ -253,7 +254,7 @@ end;
 procedure TForm1.btninjectClick(Sender: TObject);
 var
 PID: longword;
-ProcessHandle:thandle;
+ProcessHandle,ThreadHandle:thandle;
 h:thandle;
 i:integer;
 oa:TObjectAttributes;
@@ -281,6 +282,7 @@ if pid<>0 then txtpid.text:=inttostr(pid);
   if pid<>0 then
   begin
     ProcessHandle :=thandle(-1);
+    ThreadHandle :=thandle(-1);
     access:=PROCESS_ALL_ACCESS ;
     //access:=PROCESS_CREATE_THREAD or PROCESS_QUERY_INFORMATION or PROCESS_VM_OPERATION or PROCESS_VM_WRITE or PROCESS_VM_READ;
     //ProcessHandle := OpenProcess(access, False, PID);
@@ -309,12 +311,16 @@ if pid<>0 then txtpid.text:=inttostr(pid);
         //if InjectRTL_CODE(ProcessHandle, @proc,p)=false then showmessage('InjectRTL failed') else showmessage('InjectRTL ok');
         if InjectRTL_dll(ProcessHandle, txtdll.text+#0)=false then StatusBar1.SimpleText :=('InjectRTL failed') else StatusBar1.SimpleText :=('InjectRTL ok');
         end;
-      {
+
       if RadioButton4.Checked then
         begin
-        if InjectRTL_DLL(ProcessHandle, 'c:\hook.dll')=false then showmessage('InjectRTL failed') else showmessage('InjectRTL ok');
+        status:=NtGetNextThread(ProcessHandle ,0,MAXIMUM_ALLOWED,0,0,ThreadHandle);
+        if status=0 then
+           if injectctx (ProcessHandle ,ThreadHandle ,txtdll.text+#0)=false then StatusBar1.SimpleText :=('injectctx failed') else StatusBar1.SimpleText :=('injectctx ok');
+        //if InjectRTL_DLL(ProcessHandle, 'c:\hook.dll')=false then showmessage('InjectRTL failed') else showmessage('InjectRTL ok');
+        //if injectapc (ProcessHandle ,0,txtdll.text+#0) =false then StatusBar1.SimpleText :=('InjectAPC failed') else StatusBar1.SimpleText :=('InjectAPC ok');
         end;
-      }
+
       if RadioButton3.Checked then
         begin
         //if InjectNT_CODE(ProcessHandle, @proc3)=false then showmessage('InjectNT failed') else showmessage('InjectNT ok');
@@ -323,7 +329,8 @@ if pid<>0 then txtpid.text:=inttostr(pid);
       except
       on e:exception do showmessage(e.Message );
       end;
-      CloseHandle(ProcessHandle);
+      if ThreadHandle<>thandle(-1) then CloseHandle(ThreadHandle);
+      if ProcessHandle<>thandle(-1) then CloseHandle(ProcessHandle);
       end
       else showmessage('NtOpenProcess failed,'+inttostr(getlasterror));
   end
