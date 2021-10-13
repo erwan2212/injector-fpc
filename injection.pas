@@ -2,12 +2,13 @@ unit injection;
 
 interface
 
-uses windows,ntdll;
+uses windows,ntdll,
+  instdecode in '..\ddetours\delphi-detours-library-master\Source\instdecode.pas';
 
 //function Inject_RemoteThreadCODE(ProcessHandle: longword; EntryPoint: pointer):boolean;
 function Inject_RemoteThreadDLL(ProcessHandle: longword; dll: string):boolean;
 
-//function InjectRTL_CODE(ProcessHandle: longword; EntryPoint,param: pointer):boolean;
+function InjectRTL_CODE(ProcessHandle: longword; EntryPoint,param: pointer):boolean;
 function InjectRTL_DLL(ProcessHandle: longword; dll:string):boolean;
 function EjectRTL_DLL(ProcessHandle: longword; hmod:thandle):boolean;
 
@@ -129,7 +130,7 @@ const
   code:array [0..62] of byte =
     // sub rsp, 28h
     ($48, $83, $ec, $28,
-    // mov [rsp + 18], rax
+    // mov [rsp + 18h], rax
     $48, $89, $44, $24, $18,
     // mov [rsp + 10h], rcx
     $48, $89, $4c, $24, $10,
@@ -359,22 +360,67 @@ result:=false;
   CloseHandle(hthread);
 end;
 
+procedure decode(param:pointer);
+var
+  Inst: TInstruction;
+  nInst: Integer;
+  tmp:string;
+  i:byte;
+  p:pointer;
+begin
+  Inst := Default (TInstruction);
+    Inst.Archi := CPUX  ;
+    Inst.NextInst := param ;
+    nInst := 0;
+    Inst.Addr := Inst.NextInst; // added
+  while (Inst.OpCode <> $c3) do
+  begin
+    inc(nInst);
+    //Inst.Addr := Inst.NextInst; //removed
+    DecodeInst(@Inst);
+    //Writeln(Format('OpCode : 0x%.2x | Length : %d', [Inst.OpCode, Inst.InstSize]));
+
+  //if inst.InstSize>1 then
+    begin
+    tmp:='';
+    for i:=0 to inst.InstSize-1  do
+      begin
+      p:=pointer(nativeuint(Inst.Addr)+i);
+      tmp:=tmp+inttohex(byte(p^),2);
+      end;
+     writeln(tmp);
+    end;
+
+   //inst.Addr :=pointer(nativeint(inst.Addr)+inst.InstSize ); //added
+   Inst.Addr := Inst.NextInst;                                 //added
+  end;
+end;
+
 //https://msdn.microsoft.com/en-us/library/cc704588.aspx -> status codes
 function InjectRTL_CODE(ProcessHandle: longword; EntryPoint,param: pointer):boolean;
 var
-  Module, baseaddress: Pointer;
-  Size, BytesWritten, TID: longword;
+  Module, baseaddress,paramaddress: Pointer;
+  Size,size2, BytesWritten, TID: longword;
   Status:integer;
   hThread:thandle;
   ClientID:CLIENT_ID;
   b:boolean;
 begin
+  OutputDebugString('InjectRTL_CODE');
+  //
+  //decode(@NtAllocateVirtualMemory);
+  //exit;
+  //
   //STATUS_FREE_VM_NOT_AT_BASE=0xC000009F
   //STATUS_UNABLE_TO_DELETE_SECTION=0xC000001B
   
   Module := Pointer(GetModuleHandle(nil));
+  OutputDebugString(pchar('Module:'+inttohex(nativeuint(Module),sizeof(Module))));
+  OutputDebugString(pchar('EntryPoint:'+inttohex(nativeuint(EntryPoint),sizeof(EntryPoint))));
+  OutputDebugString(pchar('Param:'+inttohex(nativeuint(Param),sizeof(Param))));
   size:=0;status:=0;
-  VirtualFreeEx(ProcessHandle, Module, 0, MEM_RELEASE);
+  b:=VirtualFreeEx(ProcessHandle, Module, 0, MEM_RELEASE);
+  OutputDebugString(pchar('VirtualFreeEx:'+booltostr(b)));
   //status:=NtFreeVirtualMemory(ProcessHandle, @module, @size, MEM_RELEASE);
   {
   if status<>0 then
@@ -384,14 +430,30 @@ begin
     exit;
     end;
   }
-  Size := PImageOptionalHeader(Pointer(integer(Module) + PImageDosHeader(Module)^._lfanew + SizeOf(dword) + SizeOf(TImageFileHeader)))^.SizeOfImage;
+  Size := PImageOptionalHeader(Pointer(nativeuint(Module) + PImageDosHeader(Module)^._lfanew + SizeOf(dword) + SizeOf(TImageFileHeader)))^.SizeOfImage;
   size:=align(size,$1000);
+  OutputDebugString(pchar('size:'+inttostr(size)));
   SetLastError(0);
 
   //STATUS_INVALID_HANDLE=C0000008
   //baseaddress :=VirtualAllocEx(ProcessHandle ,module,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
   baseaddress:=module;
   status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+  OutputDebugString(pchar('NtAllocateVirtualMemory:'+inttostr(status)));
+  OutputDebugString(pchar('baseaddress:'+inttohex(nativeuint(baseaddress),sizeof(baseaddress))));
+  //if baseaddress =nil then
+  if status<>0 then
+    begin
+    raise Exception.Create('NtAllocateVirtualMemory failed,'+inttohex(status,4));
+    result:=false;
+    exit;
+    end;
+
+  paramaddress:=nil;
+  size2:=align(16,$1000);
+  if param<>nil then status:=NtAllocateVirtualMemory(ProcessHandle ,@paramaddress,0,@Size2,MEM_COMMIT or MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+  OutputDebugString(pchar('NtAllocateVirtualMemory:'+inttostr(status)));
+  OutputDebugString(pchar('paramaddress:'+inttohex(nativeuint(paramaddress),sizeof(paramaddress))));
   //if baseaddress =nil then
   if status<>0 then
     begin
@@ -402,6 +464,7 @@ begin
 
   //lets write our module to baseaddress
   Status:=NtWriteVirtualMemory(ProcessHandle, baseaddress, Module, Size, @BytesWritten);
+  OutputDebugString(pchar('NtWriteVirtualMemory:'+inttostr(status)));
   if Status<>0
     then
     begin
@@ -412,14 +475,20 @@ begin
     begin
     //Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, GetProcAddress (GetModuleHandle('dll'),'func') , pchar('param'), @hThread, @ClientID);
 
-    Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, EntryPoint , nil, @hThread, @ClientID);
+    //size=16 is arbitrary...
+    if param<>nil then Status:=NtWriteVirtualMemory(ProcessHandle, paramaddress, param, 16, @BytesWritten);
+    OutputDebugString(pchar('NtWriteVirtualMemory:'+inttostr(status)));
+    //messageboxa(0,'wait','wait',0);
+    Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, EntryPoint , paramaddress , @hThread, @ClientID);
+    OutputDebugString(pchar('RtlCreateUserThread:'+inttostr(status)));
     WaitForSingleObject(hThread,INFINITE);
     CloseHandle(hThread);
     if Status <>0 then result:=false else result:=true;
     end;
 
-    //size:=0;
-    //NtFreeVirtualMemory(ProcessHandle, module, @size, MEM_RELEASE);
+    size2:=0;size:=0; //If the MEM_RELEASE flag is set in *FreeType, *RegionSize must be zero
+    if baseaddress<>nil then NtFreeVirtualMemory(ProcessHandle, @baseaddress, @size, MEM_RELEASE);
+    if paramaddress<>nil then NtFreeVirtualMemory(ProcessHandle, @paramaddress, @size2, MEM_RELEASE);
 
 end;
 
