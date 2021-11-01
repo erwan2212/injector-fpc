@@ -136,6 +136,8 @@ end ;
    end;
    PSYSTEM_HANDLE_INFORMATION=^SYSTEM_HANDLE_INFORMATION;
 
+   function GetThreadId(Thread:HANDLE): DWORD;stdcall;external 'kernel32.dll';
+
    {
    function VirtualFreeEx
     (hProcess: THandle;
@@ -286,6 +288,7 @@ NtReadVirtualMemory:function(
 
 
     NtSuspendThread:function( ThreadHandle:HANDLE;  SuspendCount:PULONG): NTSTATUS; stdcall;
+    NtResumeThread:function( hThread : HANDLE; dwResumeCount : PULONG ): NTSTATUS; stdcall;
     NtAlertResumeThread:function( ThreadHandle:HANDLE;  SuspendCount:PULONG): NTSTATUS; stdcall;
 
       NtAllocateVirtualMemory:function(
@@ -316,6 +319,9 @@ NtReadVirtualMemory:function(
   SizeOfStackCommit: Pointer;
   SizeOfStackReserve: Pointer;
   Thebuf: Pointer): HRESULT; stdcall;
+
+      NtGetContextThread:function(pThread:handle; pContext:PCONTEXT):NTSTATUS; stdcall;
+      NtSetContextThread:function(pThread:handle; Context:PCONTEXT):NTSTATUS; stdcall;
 
   NtCreateSection :function(
           SectionHandle:PHANDLE;
@@ -526,9 +532,12 @@ function initAPI:boolean;
   NtQueueApcThread:=getProcAddress(lib,'NtQueueApcThread');
   NtSuspendThread:=getProcAddress(lib,'NtSuspendThread');
   NtAlertResumeThread:=getProcAddress(lib,'NtAlertResumeThread');
+  NtResumeThread:=getProcAddress(lib,'NtAlertResumeThread');
   NtCreateSection:=getProcAddress(lib,'NtCreateSection');
   NtMapViewOfSection:=getProcAddress(lib,'NtMapViewOfSection');
   NtClose:=getProcAddress(lib,'NtClose');
+  NtGetContextThread:=getProcAddress(lib,'NtGetContextThread');
+  NtSetContextThread:=getProcAddress(lib,'NtSetContextThread');
   result:=true;
   except
   //on e:exception do writeln('init error:'+e.message);

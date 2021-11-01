@@ -302,7 +302,7 @@ if pid<>0 then txtpid.text:=inttostr(pid);
         begin
 
         //if Inject_RemoteThreadCODE (ProcessHandle, @proc3)=false then showmessage('Inject failed') else  showmessage('Inject ok');
-        if Inject_RemoteThreadDLL (ProcessHandle, txtdll.text+#0)=false then StatusBar1.SimpleText :=('Inject failed') else  StatusBar1.SimpleText :=('Inject ok');
+        if InjectNT_RemoteThreadDLL (ProcessHandle, txtdll.text+#0)=false then StatusBar1.SimpleText :=('Inject failed') else  StatusBar1.SimpleText :=('Inject ok');
         end;
       if RadioButton2.Checked then
         begin
@@ -317,7 +317,7 @@ if pid<>0 then txtpid.text:=inttostr(pid);
         begin
         status:=NtGetNextThread(ProcessHandle ,0,MAXIMUM_ALLOWED,0,0,@ThreadHandle);
         if status=0 then
-           if injectctx (ProcessHandle ,ThreadHandle ,txtdll.text+#0)=false then StatusBar1.SimpleText :=('injectctx failed') else StatusBar1.SimpleText :=('injectctx ok');
+           if injectNT_CTX (ProcessHandle ,ThreadHandle ,txtdll.text+#0)=false then StatusBar1.SimpleText :=('injectctx failed') else StatusBar1.SimpleText :=('injectctx ok');
         //if InjectRTL_DLL(ProcessHandle, 'c:\hook.dll')=false then showmessage('InjectRTL failed') else showmessage('InjectRTL ok');
         //if injectapc (ProcessHandle ,0,txtdll.text+#0) =false then StatusBar1.SimpleText :=('InjectAPC failed') else StatusBar1.SimpleText :=('InjectAPC ok');
         end;
@@ -373,7 +373,7 @@ if pid<>0 then txtpid.text:=inttostr(pid);
 //
 
 closehandle(ProcessHandle );
-
+sleep(100);
 btnenumClick (self);
 end;
 

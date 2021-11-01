@@ -6,7 +6,8 @@ uses windows,ntdll,
   instdecode in '..\ddetours\delphi-detours-library-master\Source\instdecode.pas';
 
 //function Inject_RemoteThreadCODE(ProcessHandle: longword; EntryPoint: pointer):boolean;
-function Inject_RemoteThreadDLL(ProcessHandle: longword; dll: string):boolean;
+function InjectNT_RemoteThreadDLL(ProcessHandle: longword; dll: string):boolean;
+//function InjectNT_RemoteThreadCODE(ProcessHandle: longword; EntryPoint: pointer):boolean;
 
 function InjectRTL_CODE(ProcessHandle: longword; EntryPoint,param: pointer):boolean;
 function InjectRTL_DLL(ProcessHandle: longword; dll:string):boolean;
@@ -16,7 +17,7 @@ function EjectRTL_DLL(ProcessHandle: longword; hmod:thandle):boolean;
 function InjectNT_DLL(ProcessHandle: longword; dll: string):boolean;
 
 //function injectapc( hprocess,hthread:thandle;dll:string):boolean;
-function injectctx(hprocess, hthread: thandle; dll: string): boolean;
+function injectNT_CTX(hprocess, hthread: thandle; dll: string): boolean;
 
 function injectAPC_DLL( hprocess,hthread:thandle;dll:string):boolean;
 
@@ -196,7 +197,7 @@ begin
 end;
 }
 
-function injectctx(hprocess, hthread: thandle; dll: string): boolean;
+function injectNT_CTX(hprocess, hthread: thandle; dll: string): boolean;
 const
 {$IFDEF win64}
   code:array [0..62] of byte =
@@ -242,60 +243,65 @@ var
   ctx: PContext;
   Storage: Pointer;
   i:byte;
-  tmp:string;
+  //tmp:string;
+  //suspendcount:ulong;
+  status:ntstatus;
+  size:longword;
 begin
   result:=false;
   OutputDebugString (pchar('hprocess:'+inttostr(hprocess)));
   OutputDebugString (pchar('hthread:'+inttostr(hthread)));
   //if ntsuspendprocess(hprocess)=false then
-  if SuspendThread(hthread)=-1 then
+  //if SuspendThread(hthread)=-1 then
+  if NtSuspendThread(hthread,nil)<>0 then
      begin
      outputdebugstring(pchar('suspend failed: '+inttostr(getlasterror)));
      exit;
      end;
 
   //memory address for dll
-  lpDllAddr := VirtualAllocEx(hProcess, nil, length(dll), MEM_COMMIT, PAGE_READWRITE);
+  lpDllAddr:=nil;
+  //lpDllAddr := VirtualAllocEx(hProcess, nil, length(dll), MEM_COMMIT, PAGE_READWRITE);
+  size:=align(length(dll),$1000);
+  status:=NtAllocateVirtualMemory(hProcess ,@lpDllAddr,0,@Size,MEM_COMMIT {or MEM_RESERVE}, PAGE_READWRITE);
   if lpDllAddr = nil then
   begin
+       ResumeThread(hthread);
        outputdebugstring(pchar('lpDllAddr is null:'+inttostr(getlasterror)));
        exit;
   end;
   dwdlladdr := nativeuint(lpDllAddr);
-  OutputDebugString(PChar('lpDllAddr:' + inttohex(nativeuint(lpDllAddr), 8)));
-  WriteProcessMemory(hProcess, lpDllAddr, @dll[1], length(dll), byteswritten);
-  if (byteswritten <> length(dll)) or (byteswritten = 0) then
+  OutputDebugString(PChar('lpDllAddr:' + inttohex(nativeuint(lpDllAddr), sizeof(nativeuint))));
+  byteswritten:=0;
+  //WriteProcessMemory(hProcess, lpDllAddr, @dll[1], length(dll), byteswritten);
+  Status:=NtWriteVirtualMemory(hProcess, lpDllAddr, @dll[1], length(dll), @BytesWritten);
+  if (byteswritten = 0) then
   begin
+     ResumeThread(hthread);
      outputdebugstring(pchar('WriteProcessMemory failed'));
      exit;
   end;
 
-  //memory address of code in the remote process
-  stub := VirtualAllocEx(hProcess, nil, length(code ), MEM_COMMIT,PAGE_EXECUTE_READWRITE);
-  if stub = nil then
-  begin
-       outputdebugstring(pchar('stub is null'));
-       exit;
-  end;
-  OutputDebugString(PChar('stub:' + inttohex(nativeuint(stub), 8)));
-
   //memory address of loadlibrary
   lploadLibraryAddr := GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA');
   dwloadlibraryaddr := nativeuint(lploadLibraryAddr);
-  OutputDebugString(PChar('loadLibraryAddress:' + inttohex( nativeuint(lploadLibraryAddr), 8)));
+  OutputDebugString(PChar('loadLibraryAddress:' + inttohex( nativeuint(lploadLibraryAddr), sizeof(nativeuint))));
 
   //old context
   {$IFDEF win64}ctx := AllocMemAlign(SizeOf(TContext), 16, Storage);{$endif}
   {$IFDEF win32}ctx := AllocMemAlign(SizeOf(TContext), 0, Storage);{$endif}
   ctx^.ContextFlags := CONTEXT_CONTROL;
-  if GetThreadContext(hThread, ctx^)=false then
+  //if GetThreadContext(hThread, ctx^)=false //original
+  //if GetThreadContext(hThread, ctx)=false then //works too
+  if NtGetContextThread(hThread, ctx)<>0 then
   begin
+       ResumeThread(hthread);
        outputdebugstring(pchar('GetThreadContext failed:'+inttostr(getlasterror)));
        exit;
   end;
   {$IFDEF win64}oldIP := ctx^.Rip;{$endif}
   {$IFDEF win32}oldIP := ctx^.eip;{$endif}
-  OutputDebugString(PChar('oldip:' + inttohex(nativeuint(oldip), 8)));
+  OutputDebugString(PChar('oldip:' + inttohex(nativeuint(oldip), sizeof(nativeuint))));
 
   //modify code with correct memory addresses
   //RIP + dwdlladdr + dwloadlibraryaddr
@@ -309,9 +315,23 @@ begin
   copymemory(@code [8], @dwdlladdr, sizeof(nativeuint));
   copymemory(@code [13], @dwloadlibraryaddr, sizeof(nativeuint));
   {$endif}
+  //memory address of code in the remote process
+  stub:=nil;
+  //stub := VirtualAllocEx(hProcess, nil, length(code ), MEM_COMMIT,PAGE_EXECUTE_READWRITE);
+  size:=align(length(code ),$1000);
+  status:=NtAllocateVirtualMemory(hProcess ,@stub,0,@Size,MEM_COMMIT {or MEM_RESERVE}, PAGE_EXECUTE_READWRITE);
+  if stub = nil then
+  begin
+       ResumeThread(hthread);
+       outputdebugstring(pchar('stub is null'));
+       exit;
+  end;
+  OutputDebugString(PChar('stub:' + inttohex(nativeuint(stub), sizeof(nativeuint))));
   //write code to remote process
-  WriteProcessMemory(hProcess, stub, @code[0], length(code ), byteswritten);
-  if (byteswritten<>length(code )) or (byteswritten = 0) then
+  BytesWritten:=0;
+  //WriteProcessMemory(hProcess, stub, @code[0], length(code ), byteswritten);
+  Status:=NtWriteVirtualMemory(hProcess, stub, @code[0], length(code ), @BytesWritten);
+  if (byteswritten = 0) then
   begin
      outputdebugstring(pchar('WriteProcessMemory failed'));
      exit;
@@ -320,7 +340,8 @@ begin
   //update context
   {$IFDEF win64}ctx^.rip := nativeuint(stub);{$endif}
   {$IFDEF win32}ctx^.eip := nativeuint(stub);{$endif}
-  if SetThreadContext(hThread, ctx^)=false then
+  //if SetThreadContext(hThread, ctx^)=false then
+  if NtSetContextThread(hThread, ctx)<>0 then
   begin
    outputdebugstring(pchar('SetThreadContext failed:'+inttostr(getlasterror)));
    exit;
@@ -328,17 +349,20 @@ begin
 
   //for i:=0 to length(codeX64_2 )-1 do tmp:=tmp+ (inttohex(codeX64_2[i],2)+' ');
 
-  if ResumeThread(hthread)=-1 then
+  //if ResumeThread(hthread)=-1 then
+  if NtResumeThread(hthread,nil)<>0 then
   //if ntresumeprocess(hprocess)=false then
    begin
      outputdebugstring(pchar('resume failed: '+inttostr(getlasterror)));
      exit;
    end else outputdebugstring(pchar('resume OK: '+inttostr(getlasterror)));
 
+  PostThreadMessage(GetThreadID(hthread), WM_NULL, 0, 0);  //trigger the remote thread
+
   result:=true;
   end;
 
-function Inject_RemoteThreadDLL(ProcessHandle: longword; dll:string):boolean;
+function InjectNT_RemoteThreadDLL(ProcessHandle: longword; dll:string):boolean;
 var
 baseaddress: Pointer=nil;
   Size, BytesWritten, TID: longword;
@@ -391,8 +415,8 @@ result:=false;
   NtFreeVirtualMemory (ProcessHandle,@baseaddress ,@size,MEM_RELEASE);
 end;
 
-
-function Inject_RemoteThreadCODE(ProcessHandle: longword; EntryPoint: pointer):boolean;
+//we are using kernel32 here to create a remote thread
+function InjectNT_RemoteThreadCODE(ProcessHandle: longword; EntryPoint: pointer):boolean;
 var
   Module, NewModule: Pointer;
   Size, TID: longword;
@@ -744,18 +768,18 @@ begin
   //if baseaddress=nil then
     begin
     result:=false;
-    raise Exception.Create('NtAllocateVirtualMemory failed,'+inttohex(status,4));
+    raise Exception.Create('NtAllocateVirtualMemory failed,'+inttohex(status,sizeof(status)));
     exit;
     end;
 
 
-  Status:=NtWriteVirtualMemory(ProcessHandle, baseaddress, @dll[1], size, @BytesWritten);
+  Status:=NtWriteVirtualMemory(ProcessHandle, baseaddress, @dll[1], length(dll), @BytesWritten);
   if Status<>0
   //if writeprocessmemory(ProcessHandle,baseaddress,@dll[1],size,@byteswritten)=false
     then
     begin
     result:=false;
-    raise Exception.Create('NtWriteVirtualMemory failed,'+inttohex(status,4));
+    raise Exception.Create('NtWriteVirtualMemory failed,'+inttohex(status,sizeof(status)));
     end
     else
     begin
