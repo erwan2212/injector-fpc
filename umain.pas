@@ -19,6 +19,7 @@ type
     btneject: TButton;
     btnrefresh: TButton;
     RadioButton4: TRadioButton;
+    RadioButton5: TRadioButton;
     txtprocess: TComboBox;
     Label1: TLabel;
     Label3: TLabel;
@@ -51,7 +52,7 @@ type
   function EnumProcesses(lpidProcess: LPDWORD; cb: DWORD; var cbNeeded: DWORD): BOOL; stdcall;external 'psapi.dll';
   function GetModuleBaseNameA(hProcess: HANDLE; hModule: HMODULE; lpBaseName: LPSTR;nSize: DWORD): DWORD; stdcall;external 'psapi.dll';
   //
-
+  function GetThreadId(thread:thandle):NTSTATUS;stdcall;external 'kernel32.dll';
 var
   Form1: TForm1;
   hMemFile:thandle;
@@ -254,7 +255,7 @@ end;
 procedure TForm1.btninjectClick(Sender: TObject);
 var
 PID: longword;
-ProcessHandle,ThreadHandle:thandle;
+ProcessHandle,ThreadHandle,oldth:thandle;
 h:thandle;
 i:integer;
 oa:TObjectAttributes;
@@ -314,11 +315,45 @@ if pid<>0 then txtpid.text:=inttostr(pid);
 
       if RadioButton4.Checked then
         begin
-        status:=NtGetNextThread(ProcessHandle ,0,MAXIMUM_ALLOWED,0,0,ThreadHandle);
+        status:=NtGetNextThread(ProcessHandle ,0,MAXIMUM_ALLOWED,0,0,@ThreadHandle);
         if status=0 then
            if injectctx (ProcessHandle ,ThreadHandle ,txtdll.text+#0)=false then StatusBar1.SimpleText :=('injectctx failed') else StatusBar1.SimpleText :=('injectctx ok');
         //if InjectRTL_DLL(ProcessHandle, 'c:\hook.dll')=false then showmessage('InjectRTL failed') else showmessage('InjectRTL ok');
         //if injectapc (ProcessHandle ,0,txtdll.text+#0) =false then StatusBar1.SimpleText :=('InjectAPC failed') else StatusBar1.SimpleText :=('InjectAPC ok');
+        end;
+
+      if RadioButton5.Checked then
+        begin
+        ThreadHandle:=0; //or -1.
+        {
+        status:=NtGetNextThread(ProcessHandle,0,MAXIMUM_ALLOWED,0,0,ThreadHandle);
+        if status=0 then
+          begin
+          outputdebugstring(pchar('tid:'+inttostr(GetThreadId(ThreadHandle))));
+          if injectAPC_DLL  (ProcessHandle ,ThreadHandle ,txtdll.text+#0)=false then StatusBar1.SimpleText :=('injectAPC failed') else StatusBar1.SimpleText :=('injectAPC ok');
+          end;
+        }
+        //{
+        while status=0 do
+              begin
+              oldth:=ThreadHandle; //zero on first round
+              status:=ntGetNextThread(
+                   ProcessHandle ,
+                   oldth,    //or use ThreadHandle but then leak...
+                   MAXIMUM_ALLOWED, //THREAD_ALL_ACCESS THREAD_QUERY_INFORMATION
+                   0,
+                   0,
+                   @ThreadHandle  //newthread
+                   );
+              closehandle(oldth); //avoid leaking
+              if status=0 then
+                  begin
+                  outputdebugstring(pchar('tid:'+inttostr(GetThreadId(ThreadHandle))));
+                  if injectAPC_DLL  (ProcessHandle ,ThreadHandle ,txtdll.text+#0)=false then StatusBar1.SimpleText :=('injectAPC failed') else StatusBar1.SimpleText :=('injectAPC ok');
+                  //closehandle(oldth);
+                  end;
+              end;
+             //}
         end;
 
       if RadioButton3.Checked then
@@ -336,6 +371,8 @@ if pid<>0 then txtpid.text:=inttostr(pid);
   end
   else showmessage('GetWindowThreadProcessId failed,'+inttostr(getlasterror));
 //
+
+closehandle(ProcessHandle );
 
 btnenumClick (self);
 end;

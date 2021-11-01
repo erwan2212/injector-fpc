@@ -42,11 +42,14 @@
         </CompilerOptions>
       </Item1>
     </BuildModes>
-    <Units Count="8">
+    <Units Count="7">
       <Unit0>
         <Filename Value="injector.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="66"/>
+        <EditorIndex Value="3"/>
+        <CursorPos Y="20"/>
+        <UsageCount Value="151"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
       <Unit1>
@@ -55,182 +58,176 @@
         <ComponentName Value="Form1"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <TopLine Value="13"/>
-        <CursorPos X="5" Y="29"/>
-        <UsageCount Value="66"/>
+        <TopLine Value="334"/>
+        <CursorPos X="57" Y="339"/>
+        <UsageCount Value="151"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
         <Filename Value="injection.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="684"/>
-        <CursorPos Y="707"/>
-        <UsageCount Value="33"/>
+        <TopLine Value="175"/>
+        <CursorPos X="57" Y="145"/>
+        <UsageCount Value="76"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
         <Filename Value="ntdll.pas"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="141"/>
-        <CursorPos X="30" Y="155"/>
-        <UsageCount Value="14"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="345"/>
+        <CursorPos X="47" Y="352"/>
+        <UsageCount Value="57"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
-        <Filename Value="C:\FPC\3.0.0\source\rtl\win64\windows.pp"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos X="59" Y="3"/>
-        <UsageCount Value="6"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="C:\FPC\3.0.0\source\rtl\win\sysutils.pp"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="284"/>
-        <CursorPos X="14" Y="304"/>
-        <UsageCount Value="7"/>
-      </Unit5>
-      <Unit6>
         <Filename Value="..\NTHASH-FPC\uimagehlp.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="45"/>
         <CursorPos Y="59"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="1"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit6>
-      <Unit7>
+      </Unit4>
+      <Unit5>
         <Filename Value="C:\FPC\3.0.0\source\rtl\win\wininc\struct.inc"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="1194"/>
-        <CursorPos X="11" Y="1226"/>
-        <UsageCount Value="12"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="2210"/>
+        <CursorPos X="36" Y="2224"/>
+        <UsageCount Value="55"/>
         <Loaded Value="True"/>
-      </Unit7>
+      </Unit5>
+      <Unit6>
+        <Filename Value="C:\FPC\3.0.0\source\rtl\objpas\objpas.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="21"/>
+        <CursorPos X="24" Y="35"/>
+        <UsageCount Value="2"/>
+      </Unit6>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="injection.pas"/>
-        <Caret Line="129" Column="7" TopLine="117"/>
+        <Filename Value="umain.pas"/>
+        <Caret Line="339" Column="57" TopLine="334"/>
       </Position1>
       <Position2>
         <Filename Value="injection.pas"/>
-        <Caret Line="189" Column="52" TopLine="175"/>
+        <Caret Line="118" Column="26" TopLine="118"/>
       </Position2>
       <Position3>
-        <Filename Value="injection.pas"/>
-        <Caret Line="221" Column="32" TopLine="202"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="311" Column="3" TopLine="297"/>
       </Position3>
       <Position4>
         <Filename Value="injection.pas"/>
-        <Caret Line="154" Column="12" TopLine="141"/>
+        <Caret Line="139" Column="16" TopLine="119"/>
       </Position4>
       <Position5>
         <Filename Value="injection.pas"/>
-        <Caret Line="238" Column="28" TopLine="200"/>
+        <Caret Line="133" Column="34" TopLine="120"/>
       </Position5>
       <Position6>
         <Filename Value="injection.pas"/>
-        <Caret Line="219" Column="46" TopLine="199"/>
+        <Caret Line="134" Column="42" TopLine="120"/>
       </Position6>
       <Position7>
-        <Filename Value="umain.pas"/>
-        <Caret Line="279" Column="13" TopLine="273"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="10" Column="35"/>
       </Position7>
       <Position8>
         <Filename Value="injection.pas"/>
-        <Caret Line="250" Column="22" TopLine="228"/>
+        <Caret Line="133" Column="162" TopLine="120"/>
       </Position8>
       <Position9>
-        <Filename Value="injection.pas"/>
-        <Caret Line="555" Column="33" TopLine="548"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="532" Column="61" TopLine="516"/>
       </Position9>
       <Position10>
-        <Filename Value="injection.pas"/>
-        <Caret Line="645" Column="10" TopLine="694"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="13" Column="5"/>
       </Position10>
       <Position11>
         <Filename Value="injection.pas"/>
-        <Caret Line="688" Column="93" TopLine="675"/>
+        <Caret Line="137" Column="27" TopLine="123"/>
       </Position11>
       <Position12>
         <Filename Value="injection.pas"/>
-        <Caret Line="689" Column="84" TopLine="675"/>
+        <Caret Line="136" Column="93" TopLine="123"/>
       </Position12>
       <Position13>
         <Filename Value="injection.pas"/>
-        <Caret Line="691" Column="24" TopLine="692"/>
+        <Caret Line="111" Column="35" TopLine="106"/>
       </Position13>
       <Position14>
         <Filename Value="injection.pas"/>
-        <Caret Line="707" Column="24" TopLine="693"/>
+        <Caret Line="153" Column="24" TopLine="132"/>
       </Position14>
       <Position15>
-        <Filename Value="injection.pas"/>
-        <Caret Line="710" Column="45" TopLine="693"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="541" Column="39" TopLine="522"/>
       </Position15>
       <Position16>
         <Filename Value="injection.pas"/>
-        <Caret Line="778" Column="82" TopLine="754"/>
+        <Caret Line="120" Column="35" TopLine="106"/>
       </Position16>
       <Position17>
-        <Filename Value="injection.pas"/>
-        <Caret Line="779" Column="25" TopLine="755"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="341" Column="7" TopLine="319"/>
       </Position17>
       <Position18>
         <Filename Value="injection.pas"/>
-        <Caret Line="792" Column="20" TopLine="768"/>
+        <Caret Line="119" Column="17" TopLine="113"/>
       </Position18>
       <Position19>
         <Filename Value="injection.pas"/>
-        <Caret Line="816" Column="92" TopLine="792"/>
+        <Caret Line="145" Column="17" TopLine="132"/>
       </Position19>
       <Position20>
         <Filename Value="injection.pas"/>
-        <Caret Line="817" Column="81" TopLine="793"/>
+        <Caret Line="154" Column="111" TopLine="133"/>
       </Position20>
       <Position21>
         <Filename Value="injection.pas"/>
-        <Caret Line="818" Column="24" TopLine="794"/>
+        <Caret Line="146" Column="112" TopLine="133"/>
       </Position21>
       <Position22>
         <Filename Value="injection.pas"/>
-        <Caret Line="832" Column="19" TopLine="808"/>
+        <Caret Line="120" Column="19" TopLine="108"/>
       </Position22>
       <Position23>
         <Filename Value="injection.pas"/>
-        <Caret Line="25" Column="18" TopLine="11"/>
+        <Caret Line="119" Column="32" TopLine="106"/>
       </Position23>
       <Position24>
         <Filename Value="injection.pas"/>
-        <Caret Line="41" Column="19" TopLine="17"/>
+        <Caret Line="150" Column="32" TopLine="131"/>
       </Position24>
       <Position25>
         <Filename Value="injection.pas"/>
-        <Caret Line="688" Column="93" TopLine="665"/>
+        <Caret Line="120" Column="31" TopLine="128"/>
       </Position25>
       <Position26>
-        <Filename Value="injection.pas"/>
-        <Caret Line="689" Column="84" TopLine="672"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="320" Column="3" TopLine="306"/>
       </Position26>
       <Position27>
         <Filename Value="injection.pas"/>
-        <Caret Line="706" Column="30" TopLine="684"/>
+        <Caret Line="120" Column="31" TopLine="128"/>
       </Position27>
       <Position28>
         <Filename Value="ntdll.pas"/>
-        <Caret Line="294" Column="20" TopLine="279"/>
+        <Caret Line="320" Column="3" TopLine="306"/>
       </Position28>
       <Position29>
-        <Filename Value="ntdll.pas"/>
-        <Caret Line="480" Column="57" TopLine="457"/>
+        <Filename Value="injection.pas"/>
+        <Caret Line="150" TopLine="129"/>
       </Position29>
       <Position30>
-        <Filename Value="injection.pas"/>
-        <Caret Line="691" Column="17" TopLine="684"/>
+        <Filename Value="ntdll.pas"/>
+        <Caret Line="330" Column="3" TopLine="454"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>

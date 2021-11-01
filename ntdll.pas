@@ -4,6 +4,13 @@ interface
 
 uses windows;
 
+//const OBJ_VALID_PRIVATE_ATTRIBUTES   =$00010000;
+//const OBJ_ALL_VALID_ATTRIBUTES = (OBJ_VALID_PRIVATE_ATTRIBUTES or OBJ_VALID_ATTRIBUTES);
+
+const
+    SECTION_MAP_EXECUTE{: DWORD} = 8;
+    ViewShare = 1;
+    ViewUnmap = 2;
 
   type SYSTEM_INFORMATION_CLASS = (SystemBasicInformation,SystemProcessorInformation,SystemPerformanceInformation,
     SystemTimeOfDayInformation,SystemNotImplemented1,SystemProcessesAndThreadsInformation,
@@ -33,6 +40,8 @@ uses windows;
      PCLIENT_ID = ^CLIENT_ID;
      TClientID = CLIENT_ID;
      PClientID = ^TClientID;
+
+     SECTION_INHERIT = ViewShare..ViewUnmap;
      
   PUNICODE_STRING = ^UNICODE_STRING;
   UNICODE_STRING = record
@@ -273,6 +282,12 @@ NtReadVirtualMemory:function(
       ClientId : PCLIENT_ID
     ): NTSTATUS; stdcall;
 
+    NtClose:function(Handle : HANDLE): NTSTATUS; stdcall;
+
+
+    NtSuspendThread:function( ThreadHandle:HANDLE;  SuspendCount:PULONG): NTSTATUS; stdcall;
+    NtAlertResumeThread:function( ThreadHandle:HANDLE;  SuspendCount:PULONG): NTSTATUS; stdcall;
+
       NtAllocateVirtualMemory:function(
       ProcessHandle : HANDLE;
       BaseAddress : PPVOID;
@@ -302,13 +317,51 @@ NtReadVirtualMemory:function(
   SizeOfStackReserve: Pointer;
   Thebuf: Pointer): HRESULT; stdcall;
 
+  NtCreateSection :function(
+          SectionHandle:PHANDLE;
+          DesiredAccess:ACCESS_MASK;
+          ObjectAttributes:POBJECT_ATTRIBUTES;
+          MaximumSize:PLARGEINTEGER;
+          SectionPageProtection:ULONG;
+          AllocationAttributes:ULONG;
+          FileHandle:HANDLE
+          ):NTSTATUS; stdcall;
+
+  NtMapViewOfSection:function(
+       SectionHandle : HANDLE;
+       ProcessHandle : HANDLE;
+       BaseAddress : PPVOID;
+       ZeroBits : ULONG;
+       CommitSize : ULONG;
+       SectionOffset : PLARGE_INTEGER;
+       ViewSize : PULONG;
+       InheritDisposition : SECTION_INHERIT;
+       AllocationType : ULONG;
+       Protect : ULONG
+     ): NTSTATUS; stdcall;
+
+   NtQueueApcThread:function
+(ThreadHandle:HANDLE;
+ ApcRoutine:pointer; //PIO_APC_ROUTINE;
+ ApcRoutineContext:PVOID;        //param1
+ ApcStatusBlock:pointer; //PIO_STATUS_BLOCK; //param2
+ ApcReserved:ULONG       //param3
+ ):NTSTATUS; stdcall;
+
+ //NtQueueApcThreadEx in win10
+ //https://repnz.github.io/posts/apc/user-apc/
+ // This will force the current thread to execute the special user APC,
+		// Although the current thread does not enter alertable state.
+        // The APC will execute before the thread returns from kernel mode.
+
   NtGetNextThread:function(
-        ProcessHandle:thandle;
-        ThreadHandle:thandle;
+        ProcessHandle:handle;
+        ThreadHandle:handle;
         DesiredAccess:ACCESS_MASK;
         HandleAttributes:ulong;
         Flags:ulong;
-        var NewThreadHandle:thandle
+        //var NewThreadHandle:thandle
+        NewThreadHandle:phandle
        ):NTSTATUS;stdcall;
 
   NtQueryObject:function(ObjectHandle: THandle;
@@ -343,24 +396,12 @@ NtReadVirtualMemory:function(
 
 implementation
 
-//17h is for win8.1
+
 //we could store a table of offset per O.S
 //or better, find the offset directly in ntdll hence making it universal
-var  NtAllocateVirtualMemory_BUF:array [0..10] of byte=(
+var  SYSCAL_BUF:array [0..10] of byte=(
      $4c,$8b,$d1,  //mov r10, rcx
-     $b8, $17, $00, $00, $00, //mov eax, 17h //for win 8.1
-     $0f, $05,  //syscall
-     $c3 );    //ret
-
-var  NtReadVirtualMemory_BUF:array [0..10] of byte=(
-     $4c,$8b,$d1,  //mov r10, rcx
-     $b8, $3f, $00, $00, $00, //mov eax, 3Eh //for win8.1  //3f for win10
-     $0f, $05,  //syscall
-     $c3 );    //ret
-
-var  NtOpenProcess_BUF:array [0..10] of byte=(
-     $4c,$8b,$d1,  //mov r10, rcx
-     $b8, $26, $00, $00, $00, //mov eax, 26h //for win10
+     $b8, $FF, $00, $00, $00, //byte 4 (ff) is the syscal ID
      $0f, $05,  //syscall
      $c3 );    //ret
 
@@ -461,8 +502,9 @@ function initAPI:boolean;
     exit;
     end;
   //syscall !!!!
-  //VirtualProtectEx (GetCurrentProcess ,@NtReadVirtualMemory_BUF,sizeof(NtReadVirtualMemory_BUF),PAGE_EXECUTE_READWRITE ,@oldprotect);
-  //NtReadVirtualMemory:=@NtReadVirtualMemory_BUF;
+  //SYSCAL_BUF [4]:=$FF;
+  //VirtualProtectEx (GetCurrentProcess ,@SYSCAL_BUF,sizeof(SYSCAL_BUF),PAGE_EXECUTE_READWRITE ,@oldprotect);
+  //NtReadVirtualMemory:=@SYSCAL_BUF;
   NtReadVirtualMemory:=getProcAddress(lib,'NtReadVirtualMemory');
   NtWriteVirtualMemory:=getProcAddress(lib,'NtWriteVirtualMemory');
   RtlCreateUserThread:=getProcAddress(lib,'RtlCreateUserThread');
@@ -481,6 +523,12 @@ function initAPI:boolean;
   NtQueryObject:=getProcAddress(lib,'NtQueryObject');
   NtQuerySystemInformation:=getProcAddress(lib,'NtQuerySystemInformation');
   NtDuplicateObject:=getProcAddress(lib,'NtDuplicateObject');
+  NtQueueApcThread:=getProcAddress(lib,'NtQueueApcThread');
+  NtSuspendThread:=getProcAddress(lib,'NtSuspendThread');
+  NtAlertResumeThread:=getProcAddress(lib,'NtAlertResumeThread');
+  NtCreateSection:=getProcAddress(lib,'NtCreateSection');
+  NtMapViewOfSection:=getProcAddress(lib,'NtMapViewOfSection');
+  NtClose:=getProcAddress(lib,'NtClose');
   result:=true;
   except
   //on e:exception do writeln('init error:'+e.message);

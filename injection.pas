@@ -18,6 +18,8 @@ function InjectNT_DLL(ProcessHandle: longword; dll: string):boolean;
 //function injectapc( hprocess,hthread:thandle;dll:string):boolean;
 function injectctx(hprocess, hthread: thandle; dll: string): boolean;
 
+function injectAPC_DLL( hprocess,hthread:thandle;dll:string):boolean;
+
 
 //var
 
@@ -59,6 +61,8 @@ __NtCreateThreadEx: function (
    dwData:nativeuint //ULONG_PTR
   ):dword; stdcall;external 'kernel32.dll';
   }
+
+  //function QueueUserAPC(pfnAPC: TFARPROC; hThread: THandle; dwData: ULONG_PTR): DWORD; stdcall;external 'kernel32.dll' name 'QueueUserAPC';
   
 implementation
 
@@ -102,6 +106,74 @@ begin
     Result := Pointer(NativeUInt(AHolder) + (AAlign - Shift));
 end;
 
+function injectAPC_DLL( hprocess,hthread:thandle;dll:string):boolean;
+var
+localSectionAddress: Pointer=nil;
+baseaddress: Pointer=nil;
+//lploadLibraryAddr:pointer;
+byteswritten:cardinal;
+status:integer=0;
+size:longword;
+//
+sectionHandle:handle;
+ScectionDataSize:TLargeInteger;
+localSectionOffset,sectionsize:LARGE_INTEGER;
+begin
+SetLastError(0);
+result:=false;
+OutputDebugString (pchar('hprocess:'+inttostr(hprocess)));
+OutputDebugString (pchar('hthread:'+inttostr(hthread)));
+//memory address for dll
+size:=length(dll)+sizeof(char);
+ size:=align(size,$1000);
+ OutputDebugString(pchar('size:'+inttostr(size)));
+ {
+ //does not work here when it works in other functions, wtf!!!!????
+ //status:=NtAllocateVirtualMemory(hprocess  ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE, PAGE_READWRITE);
+ baseaddress := VirtualAllocEx(hProcess, nil, length(dll), MEM_COMMIT, PAGE_READWRITE);
+ //
+OutputDebugString(pchar('baseaddress:'+inttohex(nativeuint(baseaddress),sizeof(nativeuint))));
+//0xC000012D STATUS_COMMITMENT_LIMIT
+OutputDebugString(pchar('NtAllocateVirtualMemory:'+inttohex(status,sizeof(status))));
+if status<>0 then exit;
+if baseaddress=nil then exit;
+status:=NtWriteVirtualMemory(hProcess, baseaddress, @dll[1], length(dll), @BytesWritten); // write dll path
+OutputDebugString(pchar('NtWriteVirtualMemory:'+inttohex(status,sizeof(status))));
+OutputDebugString(pchar('byteswritten:'+inttostr(byteswritten)));
+if byteswritten =0 then exit;
+}
+//lets play with sections and thus avoid the (in)famous NtAllocateVirtualMemory/NtWriteVirtualMemory
+ScectionDataSize :=tlargeinteger(size);
+status:=NtCreateSection(@sectionHandle, SECTION_MAP_READ or SECTION_MAP_WRITE or SECTION_MAP_EXECUTE, nil, @sectionsize, PAGE_EXECUTE_READWRITE, SEC_COMMIT, 0);
+OutputDebugString(pchar('NtCreateSection:'+inttohex(status,sizeof(status))));
+OutputDebugString(pchar('sectionHandle:'+inttohex(sectionHandle,sizeof(sectionHandle))));
+// create a view of the memory section in the local process
+localSectionOffset.QuadPart :=0;
+status:=NtMapViewOfSection(sectionHandle, GetCurrentProcess (), @localSectionAddress, 0, 0, @localSectionOffset, @ScectionDataSize, 2, 0, PAGE_READWRITE);
+//0xC000001F STATUS_INVALID_VIEW_SIZE
+//0xC00000F3 STATUS_INVALID_PARAMETER_5
+OutputDebugString(pchar('NtMapViewOfSection:'+inttohex(status,sizeof(status))));
+OutputDebugString(pchar('localSectionAddress:'+inttohex(nativeuint(localSectionAddress),sizeof(nativeuint))));
+if status<>0 then exit;
+// create a view of the memory section in the target process
+status:=NtMapViewOfSection(sectionHandle, hprocess, @baseaddress, 0, 0, @localSectionOffset, @ScectionDataSize, 2, 0, PAGE_EXECUTE_READ);
+OutputDebugString(pchar('NtMapViewOfSection:'+inttohex(status,sizeof(status))));
+OutputDebugString(pchar('baseaddress:'+inttohex(nativeuint(baseaddress),sizeof(nativeuint))));
+// copy shellcode to the local view, which will get reflected in the target process's mapped view
+copymemory(localSectionAddress, @dll[1], length(dll));
+ntclose(sectionHandle);
+//
+//result:=QueueUserAPC(lploadLibraryAddr,hthread,dword(lpDllAddr))<>0;
+NtSuspendThread(hthread, nil);
+status:=NtQueueApcThread(hthread, GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA'), baseaddress, nil, 0);
+//0xC0000001 STATUS_UNSUCCESSFUL
+//Exception non gérée à 0x000000010000921A dans injector-win64.exe : 0xC0000005 : Violation d'accès lors de la lecture de l'emplacement 0xFFFFFFFFFFFFFFFF.
+result:=status=0;
+OutputDebugString(pchar('NtQueueApcThread:'+inttohex(status,sizeof(status))));
+NtAlertResumeThread(hthread, nil);
+NtFreeVirtualMemory (hProcess,@baseaddress ,@size,MEM_RELEASE);
+//closehandle(hthread );
+end;
 
 {
 function injectapc( hprocess,hthread:thandle;dll:string):boolean;
@@ -354,6 +426,7 @@ result:=false;
     result:=false;
     exit;
     end;
+  //we could set memory to page_noaccess, create thread suspended, let the av do its work, set memory to rwx, resume thread
   hthread:= CreateRemoteThread(ProcessHandle, nil, 0, EntryPoint, Module, 0, TID);
   if  hthread<>0 then result:=true;
   WaitForSingleObject(hthread,INFINITE);
@@ -450,7 +523,8 @@ begin
     end;
 
   paramaddress:=nil;
-  size2:=align(16,$1000);
+  size2:=align(16,$1000); //arbitrary 16 bytes
+  //rwx may be not needed, rw could do ?
   if param<>nil then status:=NtAllocateVirtualMemory(ProcessHandle ,@paramaddress,0,@Size2,MEM_COMMIT or MEM_RESERVE, PAGE_EXECUTE_READWRITE);
   OutputDebugString(pchar('NtAllocateVirtualMemory:'+inttostr(status)));
   OutputDebugString(pchar('paramaddress:'+inttohex(nativeuint(paramaddress),sizeof(paramaddress))));
@@ -479,6 +553,7 @@ begin
     if param<>nil then Status:=NtWriteVirtualMemory(ProcessHandle, paramaddress, param, 16, @BytesWritten);
     OutputDebugString(pchar('NtWriteVirtualMemory:'+inttostr(status)));
     //messageboxa(0,'wait','wait',0);
+    //we could set memory to page_noaccess, create thread suspended, let the av do its work, set memory to rwx, resume thread
     Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, EntryPoint , paramaddress , @hThread, @ClientID);
     OutputDebugString(pchar('RtlCreateUserThread:'+inttostr(status)));
     WaitForSingleObject(hThread,INFINITE);
@@ -663,7 +738,8 @@ begin
   size:=align(size,$1000);
   status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE, PAGE_READWRITE);
   //baseaddress :=VirtualAllocEx(ProcessHandle ,nil,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
-  //OutputDebugStringA(pchar('VirtualAllocEx:'+inttohex(nativeuint(baseaddress),8)));
+  OutputDebugString(pchar('NtAllocateVirtualMemory:'+inttohex(status,sizeof(status))));
+  OutputDebugString(pchar('baseaddress:'+inttohex(nativeuint(baseaddress),sizeof(nativeuint))));
   if status<>0 then
   //if baseaddress=nil then
     begin
@@ -857,6 +933,10 @@ Result := VirtualAllocEx(hProcess, nil, dwBufLen, MEM_COMMIT or MEM_RESERVE, PAG
 if not (WriteProcessMemory(hProcess, Result, pBuffer, dwBufLen, @nBytes)) then
 Result := nil;
 end;
+
+
+
+
 
 {
 function InjectThread(hProcess: Cardinal; pThreadFunc: Pointer; pThreadParam: Pointer; dwFuncSize,

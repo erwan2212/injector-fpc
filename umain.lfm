@@ -145,4 +145,12 @@ object Form1: TForm1
     Caption = 'SetThreadContext'
     TabOrder = 13
   end
+  object RadioButton5: TRadioButton
+    Left = 205
+    Height = 24
+    Top = 101
+    Width = 159
+    Caption = 'NTQueueAPCThread'
+    TabOrder = 14
+  end
 end
