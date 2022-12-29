@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 484
+  Left = 554
   Height = 526
-  Top = 213
+  Top = 210
   Width = 667
   Caption = 'Injector'
   ClientHeight = 526
@@ -42,7 +42,7 @@ object Form1: TForm1
     Width = 160
     TabOrder = 1
   end
-  object RadioButton1: TRadioButton
+  object rbremotethread: TRadioButton
     Left = 30
     Height = 24
     Top = 69
@@ -52,7 +52,7 @@ object Form1: TForm1
     TabOrder = 2
     TabStop = True
   end
-  object RadioButton2: TRadioButton
+  object rbuserthread: TRadioButton
     Left = 200
     Height = 24
     Top = 69
@@ -60,7 +60,7 @@ object Form1: TForm1
     Caption = 'RtlCreateUserThread'
     TabOrder = 3
   end
-  object RadioButton3: TRadioButton
+  object rbthreadex: TRadioButton
     Left = 368
     Height = 24
     Top = 69
@@ -79,7 +79,7 @@ object Form1: TForm1
     Left = 32
     Height = 28
     Top = 136
-    Width = 622
+    Width = 584
     TabOrder = 6
     Text = 'c:\_apps\hook.dll'
   end
@@ -87,7 +87,7 @@ object Form1: TForm1
     Left = 32
     Height = 28
     Top = 176
-    Width = 622
+    Width = 584
     TabOrder = 7
     Text = 'data'
   end
@@ -137,7 +137,7 @@ object Form1: TForm1
     OnClick = btnrefreshClick
     TabOrder = 12
   end
-  object RadioButton4: TRadioButton
+  object rbthreadcontext: TRadioButton
     Left = 520
     Height = 24
     Top = 69
@@ -145,12 +145,41 @@ object Form1: TForm1
     Caption = 'SetThreadContext'
     TabOrder = 13
   end
-  object RadioButton5: TRadioButton
+  object rbapcthread: TRadioButton
     Left = 205
     Height = 24
     Top = 101
     Width = 159
     Caption = 'NTQueueAPCThread'
     TabOrder = 14
+  end
+  object RadioButton6: TRadioButton
+    Left = 368
+    Height = 24
+    Top = 101
+    Width = 89
+    Caption = 'Shellcode'
+    OnChange = RadioButton6Change
+    TabOrder = 15
+  end
+  object btnbrowser: TButton
+    Left = 624
+    Height = 31
+    Top = 133
+    Width = 30
+    Caption = '...'
+    OnClick = btnbrowserClick
+    TabOrder = 16
+  end
+  object chkdata: TCheckBox
+    Left = 630
+    Height = 23
+    Top = 181
+    Width = 24
+    TabOrder = 17
+  end
+  object OpenDialog1: TOpenDialog
+    left = 448
+    top = 16
   end
 end

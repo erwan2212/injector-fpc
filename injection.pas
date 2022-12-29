@@ -9,6 +9,7 @@ uses windows,ntdll,
 function InjectNT_RemoteThreadDLL(ProcessHandle: longword; dll: string):boolean;
 //function InjectNT_RemoteThreadCODE(ProcessHandle: longword; EntryPoint: pointer):boolean;
 
+function InjectRTL_BUFFER(ProcessHandle: longword; buffer: array of byte):boolean;
 function InjectRTL_CODE(ProcessHandle: longword; EntryPoint,param: pointer):boolean;
 function InjectRTL_DLL(ProcessHandle: longword; dll:string):boolean;
 function EjectRTL_DLL(ProcessHandle: longword; hmod:thandle):boolean;
@@ -18,6 +19,8 @@ function InjectNT_DLL(ProcessHandle: longword; dll: string):boolean;
 
 //function injectapc( hprocess,hthread:thandle;dll:string):boolean;
 function injectNT_CTX(hprocess, hthread: thandle; dll: string): boolean;
+
+function InjectNT_BUFFER(ProcessHandle: longword; buffer: array of byte):boolean;
 
 function injectAPC_DLL( hprocess,hthread:thandle;dll:string):boolean;
 
@@ -457,6 +460,84 @@ result:=false;
   CloseHandle(hthread);
 end;
 
+function InjectNT_BUFFER(ProcessHandle: longword; buffer: array of byte):boolean;
+var
+  baseaddress: Pointer=nil;
+  Size, BytesWritten, TID: longword;
+  Status:integer;
+  hThread:thandle;
+  ClientID:CLIENT_ID;
+  b:boolean;
+begin
+  //writeln('InjectRTL_BUFFER');
+  OutputDebugString('InjectNT_BUFFER');
+  //
+  //decode(@NtAllocateVirtualMemory);
+  //exit;
+  //
+  //STATUS_FREE_VM_NOT_AT_BASE=0xC000009F
+  //STATUS_UNABLE_TO_DELETE_SECTION=0xC000001B
+
+
+  OutputDebugString(pchar('length:'+inttostr(length(buffer))));
+
+  size:=0;
+
+  Size := length(buffer);
+  size:=align(size,$1000);
+  OutputDebugString(pchar('size:'+inttostr(size)));
+  SetLastError(0);
+
+  //STATUS_INVALID_HANDLE=C0000008
+  //baseaddress :=VirtualAllocEx(ProcessHandle ,module,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
+
+  status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+  OutputDebugString(pchar('NtAllocateVirtualMemory:'+inttostr(status)));
+  OutputDebugString(pchar('baseaddress:'+inttohex(nativeuint(baseaddress),sizeof(baseaddress))));
+  //if baseaddress =nil then
+  if status<>0 then
+    begin
+    raise Exception.Create('NtAllocateVirtualMemory failed,'+inttohex(status,4));
+    result:=false;
+    exit;
+    end;
+
+
+  //lets write our module to baseaddress
+  Status:=NtWriteVirtualMemory(ProcessHandle, baseaddress, @buffer[0], length(buffer), @BytesWritten);
+  OutputDebugString(pchar('NtWriteVirtualMemory:'+inttostr(status)));
+  if Status<>0
+    then
+    begin
+    raise Exception.Create('NtWriteVirtualMemory failed,'+inttohex(status,4));
+    result:=false;
+    end
+    else
+    begin
+    //Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, GetProcAddress (GetModuleHandle('dll'),'func') , pchar('param'), @hThread, @ClientID);
+
+
+    //messageboxa(0,'wait','wait',0);
+    //we could set memory to page_noaccess, create thread suspended, let the av do its work, set memory to rwx, resume thread
+    //Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, baseaddress , nil , @hThread, @ClientID);
+    //OutputDebugString(pchar('RtlCreateUserThread:'+inttostr(status)));
+
+    status:=NtCreateThreadEx(@hThread,$1FFFFF, nil, ProcessHandle, baseaddress, nil, False, 0, nil, nil, nil);
+    OutputDebugStringA(pchar('NtCreateThreadEx:'+inttohex(status,sizeof(status))));
+    OutputDebugStringA(pchar('hThread:'+inttostr(hThread)));
+
+
+    WaitForSingleObject(hThread,INFINITE); //do we need to wait 4 ever?
+    CloseHandle(hThread);
+    if Status <>0 then result:=false else result:=true;
+    end;
+
+    size:=0; //If the MEM_RELEASE flag is set in *FreeType, *RegionSize must be zero
+    if baseaddress<>nil then NtFreeVirtualMemory(ProcessHandle, @baseaddress, @size, MEM_RELEASE);
+
+
+end;
+
 procedure decode(param:pointer);
 var
   Inst: TInstruction;
@@ -591,7 +672,77 @@ begin
 
 end;
 
+function InjectRTL_BUFFER(ProcessHandle: longword; buffer: array of byte):boolean;
+var
+  baseaddress: Pointer=nil;
+  Size, BytesWritten, TID: longword;
+  Status:integer;
+  hThread:thandle;
+  ClientID:CLIENT_ID;
+  b:boolean;
+begin
+  //writeln('InjectRTL_BUFFER');
+  OutputDebugString('InjectRTL_BUFFER');
+  //
+  //decode(@NtAllocateVirtualMemory);
+  //exit;
+  //
+  //STATUS_FREE_VM_NOT_AT_BASE=0xC000009F
+  //STATUS_UNABLE_TO_DELETE_SECTION=0xC000001B
 
+
+  OutputDebugString(pchar('length:'+inttostr(length(buffer))));
+
+  size:=0;
+
+  Size := length(buffer);
+  size:=align(size,$1000);
+  OutputDebugString(pchar('size:'+inttostr(size)));
+  SetLastError(0);
+
+  //STATUS_INVALID_HANDLE=C0000008
+  //baseaddress :=VirtualAllocEx(ProcessHandle ,module,size,MEM_COMMIT or MEM_RESERVE , PAGE_EXECUTE_READWRITE);
+
+  status:=NtAllocateVirtualMemory(ProcessHandle ,@baseaddress,0,@Size,MEM_COMMIT or MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+  OutputDebugString(pchar('NtAllocateVirtualMemory:'+inttostr(status)));
+  OutputDebugString(pchar('baseaddress:'+inttohex(nativeuint(baseaddress),sizeof(baseaddress))));
+  //if baseaddress =nil then
+  if status<>0 then
+    begin
+    raise Exception.Create('NtAllocateVirtualMemory failed,'+inttohex(status,4));
+    result:=false;
+    exit;
+    end;
+
+
+  //lets write our module to baseaddress
+  Status:=NtWriteVirtualMemory(ProcessHandle, baseaddress, @buffer[0], length(buffer), @BytesWritten);
+  OutputDebugString(pchar('NtWriteVirtualMemory:'+inttostr(status)));
+  if Status<>0
+    then
+    begin
+    raise Exception.Create('NtWriteVirtualMemory failed,'+inttohex(status,4));
+    result:=false;
+    end
+    else
+    begin
+    //Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, GetProcAddress (GetModuleHandle('dll'),'func') , pchar('param'), @hThread, @ClientID);
+
+
+    //messageboxa(0,'wait','wait',0);
+    //we could set memory to page_noaccess, create thread suspended, let the av do its work, set memory to rwx, resume thread
+    Status:=RtlCreateUserThread(ProcessHandle, nil, false, 0, 0,0, baseaddress , nil , @hThread, @ClientID);
+    OutputDebugString(pchar('RtlCreateUserThread:'+inttostr(status)));
+    WaitForSingleObject(hThread,INFINITE); //do we need to wait 4 ever?
+    CloseHandle(hThread);
+    if Status <>0 then result:=false else result:=true;
+    end;
+
+    size:=0; //If the MEM_RELEASE flag is set in *FreeType, *RegionSize must be zero
+    if baseaddress<>nil then NtFreeVirtualMemory(ProcessHandle, @baseaddress, @size, MEM_RELEASE);
+
+
+end;
 
 function InjectRTL_DLL(ProcessHandle: longword; dll:string):boolean;
 const
@@ -754,7 +905,7 @@ var
   Unknown3,Unknown7: cardinal;
   exitcode:dword;
   ntbuf: NT_THREAD_BUFFER;
-  ret:longint;
+  //ret:longint;
 begin
  OutputDebugString(pchar('*** InjectNT_DLL ***:'+inttostr(ProcessHandle)));
  OutputDebugString(pchar('ProcessHandle:'+inttostr(ProcessHandle)));
@@ -804,10 +955,10 @@ begin
   hThread:=0;
   OutputDebugString(pchar('LoadLibraryA:'+inttohex(nativeuint(GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA')),sizeof(nativeuint))));
   //on x64, replace @ntbuf with nil ...
-  ret:=NtCreateThreadEx(@hThread,$1FFFFF, nil, ProcessHandle, GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA'), baseaddress, False, 0, nil, nil, nil);
+  status:=NtCreateThreadEx(@hThread,$1FFFFF, nil, ProcessHandle, GetProcAddress(GetModuleHandle('kernel32.dll'), 'LoadLibraryA'), baseaddress, False, 0, nil, nil, nil);
   end;
   //
-  OutputDebugStringA(pchar('NtCreateThreadEx:'+inttohex(ret,sizeof(ret))));
+  OutputDebugStringA(pchar('NtCreateThreadEx:'+inttohex(status,sizeof(status))));
   OutputDebugStringA(pchar('hThread:'+inttostr(hThread)));
     dw:=WaitForSingleObject(hThread,10000);
     OutputDebugString(pchar('WaitForSingleObject:'+inttohex(dw,sizeof(dw))));

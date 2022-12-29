@@ -3,11 +3,8 @@ program injector;
 {$mode objfpc}{$H+}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
-  cthreads,
-  {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, umain
+  Forms, umain, advapi32
   { you can add units after this };
 
 {$R *.res}
