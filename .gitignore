@@ -4,6 +4,7 @@
 *.res
 *.~*
 *.drive*
+.vs
 *.bak
 *backup*
 *lib*
